@@ -1,0 +1,4 @@
+Complexity_Level,Height_Mean,Height_SD,Rugosity_Mean,Rugosity_SD,Fractal_Dimension_Mean,Fractal_Dimension_SD
+Low,0.928,0.409,1.069,0.066,2.333,0.232
+Medium,0.919,0.403,1.067,0.065,2.336,0.229
+High,0.923,0.392,1.07,0.066,2.334,0.235

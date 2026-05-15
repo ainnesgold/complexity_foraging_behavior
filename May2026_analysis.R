@@ -11,6 +11,10 @@ diet_raw <- read.csv("Diet Categories.csv")
 foraging_raw <- read.csv("Foraging Surveys.csv")
 video_raw <- read.csv("Video Surveys.csv")
 
+#counting how many video surveys
+video_raw %>%
+  count(Date, Site, Complexity_Level)
+
 
 # Merge the biodiversity data set and diet categories by "Genus" and "Species" columns
 bd_merged_data <- merge(biodiversity_raw, diet_raw, by = c("Genus", "Species"), all.x = TRUE)
@@ -499,7 +503,7 @@ behavior_frequencies <- clean_data %>%
             .groups = 'drop')
 
 
-#Foraging freq with Diet
+#Foraging freq
 foraging_freq_model <- lmer(foraging_frequency ~ Complexity_Level + RTS_Location + Diet_Category +
                               (1 | Site) + 
                               (1 | Date),
@@ -663,9 +667,33 @@ pairs_out <- pairs(emmeans(foraging_dist_model, ~ Diet_Category),
 pairs_df <- as.data.frame(pairs_out)
 sig_pairs <- subset(pairs_df, p.value < 0.05)
 sig_pairs
-#We see significant differences in several diet groups, including corallivore-macroinvertivore, corallivore-planktivore, corallivore-sessile invertivore, 
-# crustacivore - macroinvertivore, crustacivore - sessile invertivore, HMD - macroinvertivore, HMD - sessile invertivore, macroinvertivore - microinvertivore, 
-#macroinvertivore - planktivore, micro-invertivore - sessile invertivore, .
+
+sig_table <- sig_pairs %>%
+  mutate(
+    estimate = round(estimate, 2),
+    SE = round(SE, 2),
+    t.ratio = round(t.ratio, 2),
+    p.value = signif(p.value, 3)
+  ) %>%
+  select(
+    Contrast = contrast,
+    Estimate = estimate,
+    SE,
+    df,
+    `t value` = t.ratio,
+    `Adjusted p` = p.value
+  )
+
+table_plot <- tableGrob(sig_table, rows = NULL)
+grid.newpage()
+grid.draw(table_plot)
+
+pdf("outputs/distance_diet_table.pdf", width = 10, height = 6)
+
+grid.newpage()
+grid.draw(table_plot)
+
+dev.off()
 
 
 ## Visualization
@@ -860,6 +888,33 @@ pairs_df <- as.data.frame(pairs_out)
 sig_pairs <- subset(pairs_df, p.value < 0.05)
 sig_pairs
 
+sig_table <- sig_pairs %>%
+  mutate(
+    estimate = round(estimate, 2),
+    SE = round(SE, 2),
+    t.ratio = round(t.ratio, 2),
+    p.value = signif(p.value, 3)
+  ) %>%
+  select(
+    Contrast = contrast,
+    Estimate = estimate,
+    SE,
+    df,
+    `t value` = t.ratio,
+    `Adjusted p` = p.value
+  )
+
+table_plot <- tableGrob(sig_table, rows = NULL)
+grid.newpage()
+grid.draw(table_plot)
+
+pdf("outputs/bites_diet_table.pdf", width = 10, height = 6)
+
+grid.newpage()
+grid.draw(table_plot)
+
+dev.off()
+
 # visualization of bites
 emm_bites <- emmeans(bites_model, ~ Diet_Category)
 emm_df_bites <- as.data.frame(emm_bites)
@@ -901,3 +956,23 @@ ggsave(
   width = 10,
   height = 10
 )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
