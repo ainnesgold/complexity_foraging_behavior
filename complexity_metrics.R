@@ -27,7 +27,7 @@ df_long$Complexity_Level <- factor(
 df_long$metric <- recode(df_long$metric,
                          "Fractal_Dimension" = "Fractal Dimension")
 
-ggplot(df_long, aes(x = Complexity_Level, y = Mean, color = Complexity_Level)) +
+complexity_plot <- ggplot(df_long, aes(x = Complexity_Level, y = Mean, color = Complexity_Level)) +
   geom_point(size = 3) +
   geom_errorbar(aes(ymin = Mean - SD, ymax = Mean + SD), width = 0.15) +
   facet_wrap(~ metric, scales = "free_y") +
@@ -38,3 +38,12 @@ ggplot(df_long, aes(x = Complexity_Level, y = Mean, color = Complexity_Level)) +
   ) +
   theme_minimal(base_size = 16) +
   theme(legend.position = "none")
+
+
+ggsave(
+  filename = "outputs/complexity_plot.pdf",
+  plot = complexity_plot,
+  device = "pdf",
+  width = 10,
+  height = 5
+)
