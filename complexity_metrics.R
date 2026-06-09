@@ -1,14 +1,7 @@
 
+library(tidyverse)
 
 complexity_raw <- read.csv("Complexity_Metrics.csv")
-
-
-library(tidyr)
-library(ggplot2)
-library(tidyr)
-library(dplyr)
-
-
 
 df_long <- complexity_raw %>%
   pivot_longer(
@@ -47,3 +40,26 @@ ggsave(
   width = 10,
   height = 5
 )
+
+
+##### June 9 2026, starting with raw data #####
+#dont think i have the right raw data file, need to update
+
+complexity_raw <- read.csv("Complexity_Raw.csv")
+
+unique(complexity_raw$complexity)
+
+complexity_sum <- complexity_raw %>%
+  group_by(site, complexity) %>%
+  summarise(height_mean = mean(height), height_range = diff(range(height)),
+            rugosity_mean = mean(rugosity), rugosity_range = diff(range(rugosity)),
+            fractal_mean_mean = mean(fractal_mean), fractal_mean_range = diff(range(fractal_mean)),
+            fractal_raw_mean = mean(fractal_raw), fractal_raw_range = diff(range(fractal_raw)))
+
+
+
+
+
+
+
+  
