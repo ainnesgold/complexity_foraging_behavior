@@ -165,8 +165,16 @@ richness_abundance_sum[is.na(richness_abundance_sum)] <- 0
 
 
 
+
+
+
 ################################# trial complexity data, NEEDS TO BE UPDATED ###############################################################
 
+#### redo this part with final complexity data, summarize to get mean and range of each
+
+### see complexity_metrics.R 
+
+#but using this just to set up code
 complexity_sum <- read.csv("Complexity_Sum.csv")
 
 complexity_sum <- complexity_sum %>%
@@ -177,6 +185,8 @@ complexity_sum <- complexity_sum %>%
             range_height = mean(range_height),
             range_rugosity = mean(range_rugosity), 
             range_fractal = mean(range_fractal_dimension))
+
+##
 
 
 
@@ -337,7 +347,8 @@ anova(foraging_freq_model)
 emmeans(foraging_freq_model, pairwise ~ Diet_Category, adjust = "tukey")
 
 
-ggplot(behavior_merged, aes(x=range_height, y=foraging_frequency)) + geom_point()
+ggplot(behavior_merged, aes(x=range_height, y=foraging_frequency)) + geom_point() +
+  geom_smooth(method = "lm")
 
 
 
