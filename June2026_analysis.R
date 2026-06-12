@@ -3,7 +3,8 @@ library(lmerTest)
 library(emmeans)
 library(ggpubr)
 library(glmmTMB)
-
+library(ggeffects)
+library(DHARMa)
 
 
 biodiversity_raw <- read.csv("Biodiversity Surveys.csv")
@@ -383,7 +384,9 @@ p11<-ggplot(merged_df, aes(x = Rugosity, y = log1p(HMD_abundance))) +
 
 p12<-ggplot(merged_df, aes(x = FractalDimension, y = log1p(HMD_abundance))) +
   geom_point() +
-  geom_smooth(method = "lm") +
+  geom_smooth(method = "glm",                
+              method.args = list(family = "poisson"),                
+              formula = y ~ x) +
   scale_y_continuous(
     expand = expansion(mult = c(0.05, 0.05))
   )+
@@ -400,32 +403,42 @@ p12<-ggplot(merged_df, aes(x = FractalDimension, y = log1p(HMD_abundance))) +
     legend.position = "none"
   )
 
+
+
 complexity_community_plot <- ggarrange(p1 + rremove("xlab"), p2 + rremove("xlab") + rremove("ylab"), p3 + rremove("xlab") + rremove("ylab"),
           p4 + rremove("xlab"), p5 + rremove("xlab") + rremove("ylab"), p6 + rremove("xlab") + rremove("ylab"),
           p7 + rremove("xlab"), p8 + rremove("xlab") + rremove("ylab"), p9 + rremove("xlab") + rremove("ylab"),
           p10, p11 + rremove("ylab"), p12 + rremove("ylab"), nrow = 4, ncol = 3)
 
 
-ggsave(
-  filename = "outputs/complexity_community_plot.pdf",
-  plot = complexity_community_plot,
-  device = "pdf",
-  width = 15,
-  height = 15
-)
+# ggsave(
+#   filename = "outputs/complexity_community_plot.pdf",
+#   plot = complexity_community_plot,
+#   device = "pdf",
+#   width = 15,
+#   height = 15
+# )
 
 
 ######## models ###########
 
+#using glmer for count data: richness, abundance, HMD abundance
+  #poisson if there is no overdispersion, negative binomial if there is
+#use lme with normal distribution for continuous, normal data: shannon index
+
+hist(merged_df$richness) #skewed
+hist(merged_df$shannon_index) #normal
+hist(merged_df$abundance) #skewed
+hist(merged_df$HMD_abundance) #skewed
+
+
 # Effect of complexity on richness
-# richness_model_1 <- lmer(richness ~ HeightRange + 
-#                          (1 | Site) + 
-#                          (1 | Date),
-#                        data = merged_df)
-# anova(richness_model_1)
 
-hist(merged_df$richness)
+#overdispersion if var >> mean
+mean(merged_df$richness)
+var(merged_df$richness)
 
+#they are very similar - probably use poisson distribution 
 
 richness_model_1 <- glmer(
   richness ~ HeightRange + (1 | Site) + (1 | Date),
@@ -435,10 +448,17 @@ richness_model_1 <- glmer(
 
 summary(richness_model_1)
 
-# library(DHARMa)
-# sim_pois <- simulateResiduals(m_pois)
-# plot(sim_pois)
-# testDispersion(sim_pois)
+AIC(richness_model_1)
+
+
+
+
+#overdispersion test
+sim_pois <- simulateResiduals(richness_model_1)
+plot(sim_pois)
+testDispersion(sim_pois)
+
+#large p value so no overdispersion, poisson model is good
 
 
 richness_model_2 <- glmer(
@@ -448,7 +468,6 @@ richness_model_2 <- glmer(
 )
 
 summary(richness_model_2)
-
 
 richness_model_3 <- glmer(
   richness ~ FractalDimension + (1 | Site) + (1 | Date),
@@ -462,20 +481,8 @@ summary(richness_model_3)
 
 
 
+# Effect of complexity on shannon: lmer
 
-
-
-
-
-
-
-
-
-
-######## EDIT MODELS STARTING HERE - change to poisson models
-
-
-# Effect of complexity on shannon
 shannon_model_1 <- lmer(shannon_index ~ HeightRange + 
                            (1 | Site) + 
                            (1 | Date),
@@ -494,62 +501,112 @@ shannon_model_3 <- lmer(shannon_index ~ FractalDimension +
                         data = merged_df)
 anova(shannon_model_3)
 
-shannon_model_4 <- lmer(shannon_index ~ Rugosity * HeightRange + 
-                          (1 | Site) + 
-                          (1 | Date),
-                        data = merged_df)
-anova(shannon_model_4)
 
 
 # Effect of complexity on abundance
-abundance_model_1 <- lmer(abundance ~ HeightRange + 
-                          (1 | Site) + 
-                          (1 | Date),
-                        data = merged_df)
-anova(abundance_model_1)
 
-abundance_model_2 <- lmer(abundance ~ Rugosity + 
-                            (1 | Site) + 
-                            (1 | Date),
-                          data = merged_df)
-anova(abundance_model_2)
+## if var >> mean, means it is overdispersed and need negative binomial distribution
 
-abundance_model_3 <- lmer(abundance ~ FractalDimension + 
-                            (1 | Site) + 
-                            (1 | Date),
-                          data = merged_df)
-anova(abundance_model_3)
+mean(merged_df$abundance)
+var(merged_df$abundance)
+##var is >> mean, probably negative binomial distribution
 
-abundance_model_4 <- lmer(abundance ~ Rugosity * HeightRange + 
-                            (1 | Site) + 
-                            (1 | Date),
-                          data = merged_df)
-anova(abundance_model_4)
+
+#removed site as a random effect, lower model AIC without it and it did not account for much variance. 
+#No change in significant results once site was removed
+
+abundance_model_1 <- glmmTMB(
+  abundance ~ HeightRange + (1 | Date),
+  family = nbinom2,
+  data = merged_df
+)
+
+summary(abundance_model_1)
+
+AIC(abundance_model_1)
+
+#test overdispersion
+sim <- simulateResiduals(abundance_model_1)
+testDispersion(sim)
+
+
+abundance_model_2 <- glmmTMB(
+  abundance ~ Rugosity + (1 | Date),
+  family = nbinom2,
+  data = merged_df
+)
+
+summary(abundance_model_2)
+
+abundance_model_3 <- glmmTMB(
+  abundance ~ FractalDimension + (1 | Date),
+  family = nbinom2,
+  data = merged_df
+)
+
+summary(abundance_model_3)
+
+
+
 
 # Effect of complexity on herbivore abundance
-HMD_abundance_model_1 <- lmer(HMD_abundance ~ HeightRange + 
-                            (1 | Site) + 
-                            (1 | Date),
-                          data = merged_df)
-anova(HMD_abundance_model_1)
 
-HMD_abundance_model_2 <- lmer(HMD_abundance ~ Rugosity + 
-                                (1 | Site) + 
-                                (1 | Date),
-                              data = merged_df)
-anova(HMD_abundance_model_2)
 
-HMD_abundance_model_3 <- lmer(HMD_abundance ~ FractalDimension + 
-                                (1 | Site) + 
-                                (1 | Date),
-                              data = merged_df)
-anova(HMD_abundance_model_3)
+mean(merged_df$HMD_abundance)
+var(merged_df$HMD_abundance)
+##var is >> mean, probably negative binomial distribution
 
-HMD_abundance_model_4 <- lmer(HMD_abundance ~ Rugosity * HeightRange + 
-                                (1 | Site) + 
-                                (1 | Date),
-                              data = merged_df)
-anova(HMD_abundance_model_4)
+
+#removed site as a random effect, lower model AIC without it and it did not account for much variance. 
+#No change in significant results once site was removed
+
+HMD_abundance_model_1 <- glmmTMB(
+  HMD_abundance ~ HeightRange + (1 | Date),
+  family = nbinom2,
+  data = merged_df
+)
+
+summary(HMD_abundance_model_1)
+
+AIC(HMD_abundance_model_1)
+
+#test overdispersion
+sim <- simulateResiduals(HMD_abundance_model_1)
+testDispersion(sim)
+
+HMD_abundance_model_2 <- glmmTMB(
+  HMD_abundance ~ Rugosity + (1 | Date),
+  family = nbinom2,
+  data = merged_df
+)
+
+summary(HMD_abundance_model_2)
+
+HMD_abundance_model_3 <- glmmTMB(
+  HMD_abundance ~ FractalDimension + (1 | Date),
+  family = nbinom2,
+  data = merged_df
+)
+
+summary(HMD_abundance_model_3)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -575,44 +632,56 @@ behavior_merged <- behavior_frequencies %>%
 
 
 
+#################### models ####################
 
-#Foraging freq - edit these models
+#Foraging freq
+
+#response variable is proportion, with many zeros. Use beta family.
 
 hist(behavior_merged$foraging_frequency)
 
-install.packages("glmmTMB")
-library(glmmTMB)
 
-model_zi <- glmmTMB(
-  foraging_frequency ~ HeightRange + RTS_Location + Diet_Category +
-    (1 | Site) + (1 | Date),
-  ziformula = ~1,
-  family = nbinom2,
+# transform data since beta distribution cannot handle 0 and 1s. scale everything so it fits in the distribution.
+n <- nrow(behavior_merged)
+behavior_merged$ff_beta <- (behavior_merged$foraging_frequency * (n - 1) + 0.5) / n
+
+#i have removed random effects because they do not explain variance and lower AIC without them. No change in significance with or without them
+freq_model_1 <- glmmTMB(
+  ff_beta ~ HeightRange + RTS_Location + Diet_Category,
+  family = beta_family(),
   data = behavior_merged
 )
 
-summary(model_zi)
-
-#tukey for categories
-emmeans(foraging_freq_model, pairwise ~ Diet_Category, adjust = "tukey")
-
-#plot of it
-ggplot(behavior_merged, aes(x=HeightRange, y=foraging_frequency)) + geom_point() +
-  geom_smooth(method = "lm") +
-  labs(
-    title = "",
-    x = "Height Range",
-    y = "Foraging Frequency"
-  ) +
-  theme_minimal(base_size = 16) +
-  theme(
-    plot.title = element_text(size = 20),
-    axis.title = element_text(size = 18),
-    axis.text = element_text(size = 14),
-    legend.position = "none"
-  )
+summary(freq_model_1)
+AIC(freq_model_1)
 
 
+freq_model_2 <- glmmTMB(
+  ff_beta ~ Rugosity + RTS_Location + Diet_Category,
+  family = beta_family(),
+  data = behavior_merged
+)
+
+summary(freq_model_2)
+
+
+freq_model_3 <- glmmTMB(
+  ff_beta ~ HeightRange * Rugosity + RTS_Location + Diet_Category,
+  family = beta_family(),
+  data = behavior_merged
+)
+
+summary(freq_model_3)
+
+
+
+freq_model_4 <- glmmTMB(
+  ff_beta ~ FractalDimension + RTS_Location + Diet_Category,
+  family = beta_family(),
+  data = behavior_merged
+)
+
+summary(freq_model_4)
 
 
 
@@ -628,14 +697,53 @@ ggplot(behavior_merged, aes(x=HeightRange, y=foraging_frequency)) + geom_point()
 
 
 ###### Foraging distance ######
+
 foraging_merged <- clean_data %>%
   left_join(
     complexity_sum,
     by = c("Site", "Complexity_Level")
   )
 
-foraging_dist_model <- lmer(RTS_Location ~ range_height + Diet_Category +
-                              (1 | Site) + 
-                              (1 | Date),
-                            data = foraging_merged)
-anova(foraging_dist_model)
+
+
+hist(foraging_merged$RTS_Location)
+
+#RTS_Location is a discretized measurement of an underlying continuous movement process
+#right skewed
+# gamma log link
+
+
+distance_model_1 <- glmmTMB(
+  RTS_Location ~ HeightRange + Diet_Category,
+  family = Gamma(link = "log"),
+  data = foraging_merged
+)
+
+summary(distance_model_1)
+
+library(DHARMa)
+sim <- simulateResiduals(distance_model_1)
+plot(sim)
+testDispersion(sim)
+testZeroInflation(sim)
+
+
+emm <- emmeans(distance_model_1, ~ Diet_Category)
+pairs(emm, adjust = "tukey", type = "response")
+
+
+
+#do rest of distance models
+
+
+
+
+## still need to do number of bites
+
+
+
+
+
+
+
+
