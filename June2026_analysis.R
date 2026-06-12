@@ -1,6 +1,9 @@
 library(tidyverse)
 library(lmerTest)
 library(emmeans)
+library(ggpubr)
+library(glmmTMB)
+
 
 
 biodiversity_raw <- read.csv("Biodiversity Surveys.csv")
@@ -168,42 +171,30 @@ richness_abundance_sum[is.na(richness_abundance_sum)] <- 0
 
 
 
-################################# trial complexity data, NEEDS TO BE UPDATED ###############################################################
+################################# continuous complexity data ###############################################################
+source("complexity_metrics.R")
 
-#### redo this part with final complexity data, summarize to get mean and range of each
-
-### see complexity_metrics.R 
-
-#but using this just to set up code
-complexity_sum <- read.csv("Complexity_Sum.csv")
-
-complexity_sum <- complexity_sum %>%
-  group_by(Site, Complexity_Level) %>%
-  summarise(mean_height = mean(mean_height),
-            mean_rugosity = mean(mean_rugosity),
-            mean_fractal = mean(mean_fractal_dimension),
-            range_height = mean(range_height),
-            range_rugosity = mean(range_rugosity), 
-            range_fractal = mean(range_fractal_dimension))
-
-##
+complexity_sum <- RDH_allreef_sum
+#complexity_sum <- RDH_allplot_sum
 
 
+################################# complexity + fish community ###############################################################
 
 ## merging two datasets
-
 merged_df <- richness_abundance_sum %>%
   left_join(
     complexity_sum,
     by = c("Site", "Complexity_Level")
   )
 
-#plots 
-p1<-ggplot(merged_df, aes(x = range_height, y = richness)) +
+######## plots ###########
+## richness
+p1<-ggplot(merged_df, aes(x = HeightRange, y = richness)) +
   geom_point() +
+  geom_smooth(method = "lm") +
   labs(
     title = "A.",
-    x = "Height range",
+    x = "Height Range",
     y = "Species Richness"
   ) +
   theme_minimal(base_size = 16) +
@@ -214,11 +205,12 @@ p1<-ggplot(merged_df, aes(x = range_height, y = richness)) +
     legend.position = "none"
   )
 
-p2<-ggplot(merged_df, aes(x = mean_height, y = richness)) +
+p2<-ggplot(merged_df, aes(x = Rugosity, y = richness)) +
   geom_point() +
+  geom_smooth(method = "lm") +
   labs(
     title = "B.",
-    x = "Height mean",
+    x = "Rugosity",
     y = "Species Richness"
   ) +
   theme_minimal(base_size = 16) +
@@ -230,11 +222,12 @@ p2<-ggplot(merged_df, aes(x = mean_height, y = richness)) +
   )
 
 
-p3<-ggplot(merged_df, aes(x = range_rugosity, y = richness)) +
+p3<-ggplot(merged_df, aes(x = FractalDimension, y = richness)) +
   geom_point() +
+  geom_smooth(method = "lm") +
   labs(
     title = "C.",
-    x = "Rugosity range",
+    x = "Fractal Dimension",
     y = "Species Richness"
   ) +
   theme_minimal(base_size = 16) +
@@ -245,12 +238,15 @@ p3<-ggplot(merged_df, aes(x = range_rugosity, y = richness)) +
     legend.position = "none"
   )
 
-p4<-ggplot(merged_df, aes(x = mean_rugosity, y = richness)) +
+## shannon
+
+p4<-ggplot(merged_df, aes(x = HeightRange, y = shannon_index)) +
   geom_point() +
+  geom_smooth(method = "lm") +
   labs(
     title = "D.",
-    x = "Rugosity mean",
-    y = "Species Richness"
+    x = "Height Range",
+    y = "Shannon Index"
   ) +
   theme_minimal(base_size = 16) +
   theme(
@@ -260,12 +256,13 @@ p4<-ggplot(merged_df, aes(x = mean_rugosity, y = richness)) +
     legend.position = "none"
   )
 
-p5<-ggplot(merged_df, aes(x = range_fractal, y = richness)) +
+p5<-ggplot(merged_df, aes(x = Rugosity, y = shannon_index)) +
   geom_point() +
+  geom_smooth(method = "lm") +
   labs(
     title = "E.",
-    x = "Fractal dimension range",
-    y = "Species Richness"
+    x = "Rugosity",
+    y = "Shannon Index"
   ) +
   theme_minimal(base_size = 16) +
   theme(
@@ -275,12 +272,14 @@ p5<-ggplot(merged_df, aes(x = range_fractal, y = richness)) +
     legend.position = "none"
   )
 
-p6<-ggplot(merged_df, aes(x = mean_fractal, y = richness)) +
+
+p6<-ggplot(merged_df, aes(x = FractalDimension, y = shannon_index)) +
   geom_point() +
+  geom_smooth(method = "lm") +
   labs(
     title = "F.",
-    x = "Fractcal dimension mean",
-    y = "Species Richness"
+    x = "Fractal Dimension",
+    y = "Shannon Index"
   ) +
   theme_minimal(base_size = 16) +
   theme(
@@ -291,23 +290,173 @@ p6<-ggplot(merged_df, aes(x = mean_fractal, y = richness)) +
   )
 
 
+## abundance
+p7<-ggplot(merged_df, aes(x = HeightRange, y = log(abundance))) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(
+    title = "G.",
+    x = "Height Range",
+    y = "log(Species Abundance)"
+  ) +
+  theme_minimal(base_size = 16) +
+  theme(
+    plot.title = element_text(size = 20),
+    axis.title = element_text(size = 18),
+    axis.text = element_text(size = 14),
+    legend.position = "none"
+  )
+
+p8<-ggplot(merged_df, aes(x = Rugosity, y = log(abundance))) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(
+    title = "H.",
+    x = "Rugosity",
+    y = "log(Species Abundance)"
+  ) +
+  theme_minimal(base_size = 16) +
+  theme(
+    plot.title = element_text(size = 20),
+    axis.title = element_text(size = 18),
+    axis.text = element_text(size = 14),
+    legend.position = "none"
+  )
+
+p9<-ggplot(merged_df, aes(x = FractalDimension, y = log(abundance))) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(
+    title = "I.",
+    x = "Fractal Dimension",
+    y = "log(Species Abundance)"
+  ) +
+  theme_minimal(base_size = 16) +
+  theme(
+    plot.title = element_text(size = 20),
+    axis.title = element_text(size = 18),
+    axis.text = element_text(size = 14),
+    legend.position = "none"
+  )
+
+## herbivore abundance
+
+p10<-ggplot(merged_df, aes(x = HeightRange, y = log1p(HMD_abundance))) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  scale_y_continuous(
+    expand = expansion(mult = c(0.05, 0.05))
+  )+
+  labs(
+    title = "J.",
+    x = "Height Range",
+    y = "log(Herbivore Abundance) + 1"
+  ) +
+  theme_minimal(base_size = 16) +
+  theme(
+    plot.title = element_text(size = 20),
+    axis.title = element_text(size = 18),
+    axis.text = element_text(size = 14),
+    legend.position = "none"
+  )
 
 
+p11<-ggplot(merged_df, aes(x = Rugosity, y = log1p(HMD_abundance))) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  scale_y_continuous(
+    expand = expansion(mult = c(0.05, 0.05))
+  )+
+  labs(
+    title = "K.",
+    x = "Rugosity",
+    y = "log(Herbivore Abundance) + 1"
+  ) +
+  theme_minimal(base_size = 16) +
+  theme(
+    plot.title = element_text(size = 20),
+    axis.title = element_text(size = 18),
+    axis.text = element_text(size = 14),
+    legend.position = "none"
+  )
+
+
+p12<-ggplot(merged_df, aes(x = FractalDimension, y = log1p(HMD_abundance))) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  scale_y_continuous(
+    expand = expansion(mult = c(0.05, 0.05))
+  )+
+  labs(
+    title = "L.",
+    x = "Fractal Dimension",
+    y = "log(Herbivore Abundance) + 1"
+  ) +
+  theme_minimal(base_size = 16) +
+  theme(
+    plot.title = element_text(size = 20),
+    axis.title = element_text(size = 18),
+    axis.text = element_text(size = 14),
+    legend.position = "none"
+  )
+
+complexity_community_plot <- ggarrange(p1 + rremove("xlab"), p2 + rremove("xlab") + rremove("ylab"), p3 + rremove("xlab") + rremove("ylab"),
+          p4 + rremove("xlab"), p5 + rremove("xlab") + rremove("ylab"), p6 + rremove("xlab") + rremove("ylab"),
+          p7 + rremove("xlab"), p8 + rremove("xlab") + rremove("ylab"), p9 + rremove("xlab") + rremove("ylab"),
+          p10, p11 + rremove("ylab"), p12 + rremove("ylab"), nrow = 4, ncol = 3)
+
+
+ggsave(
+  filename = "outputs/complexity_community_plot.pdf",
+  plot = complexity_community_plot,
+  device = "pdf",
+  width = 15,
+  height = 15
+)
+
+
+######## models ###########
 
 # Effect of complexity on richness
-richness_model <- aov(richness ~ range_height, data = merged_df)
-summary(richness_model)
+# richness_model_1 <- lmer(richness ~ HeightRange + 
+#                          (1 | Site) + 
+#                          (1 | Date),
+#                        data = merged_df)
+# anova(richness_model_1)
 
-#LME for including mixed effects
-richness_model <- lmer(richness ~ range_height + 
-                         (1 | Site) + 
-                         (1 | Date),
-                       data = merged_df)
-
-anova(richness_model)
+hist(merged_df$richness)
 
 
-############################################## need to repeat plots and continuous model for abundance, hmd abundance, shannon #################
+richness_model_1 <- glmer(
+  richness ~ HeightRange + (1 | Site) + (1 | Date),
+  family = poisson,
+  data = merged_df
+)
+
+summary(richness_model_1)
+
+# library(DHARMa)
+# sim_pois <- simulateResiduals(m_pois)
+# plot(sim_pois)
+# testDispersion(sim_pois)
+
+
+richness_model_2 <- glmer(
+  richness ~ Rugosity + (1 | Site) + (1 | Date),
+  family = poisson,
+  data = merged_df
+)
+
+summary(richness_model_2)
+
+
+richness_model_3 <- glmer(
+  richness ~ FractalDimension + (1 | Site) + (1 | Date),
+  family = poisson,
+  data = merged_df
+)
+
+summary(richness_model_3)
 
 
 
@@ -319,7 +468,94 @@ anova(richness_model)
 
 
 
-## now to merge with foraging data
+
+
+
+
+######## EDIT MODELS STARTING HERE - change to poisson models
+
+
+# Effect of complexity on shannon
+shannon_model_1 <- lmer(shannon_index ~ HeightRange + 
+                           (1 | Site) + 
+                           (1 | Date),
+                         data = merged_df)
+anova(shannon_model_1)
+
+shannon_model_2 <- lmer(shannon_index ~ Rugosity + 
+                          (1 | Site) + 
+                          (1 | Date),
+                        data = merged_df)
+anova(shannon_model_2)
+
+shannon_model_3 <- lmer(shannon_index ~ FractalDimension + 
+                          (1 | Site) + 
+                          (1 | Date),
+                        data = merged_df)
+anova(shannon_model_3)
+
+shannon_model_4 <- lmer(shannon_index ~ Rugosity * HeightRange + 
+                          (1 | Site) + 
+                          (1 | Date),
+                        data = merged_df)
+anova(shannon_model_4)
+
+
+# Effect of complexity on abundance
+abundance_model_1 <- lmer(abundance ~ HeightRange + 
+                          (1 | Site) + 
+                          (1 | Date),
+                        data = merged_df)
+anova(abundance_model_1)
+
+abundance_model_2 <- lmer(abundance ~ Rugosity + 
+                            (1 | Site) + 
+                            (1 | Date),
+                          data = merged_df)
+anova(abundance_model_2)
+
+abundance_model_3 <- lmer(abundance ~ FractalDimension + 
+                            (1 | Site) + 
+                            (1 | Date),
+                          data = merged_df)
+anova(abundance_model_3)
+
+abundance_model_4 <- lmer(abundance ~ Rugosity * HeightRange + 
+                            (1 | Site) + 
+                            (1 | Date),
+                          data = merged_df)
+anova(abundance_model_4)
+
+# Effect of complexity on herbivore abundance
+HMD_abundance_model_1 <- lmer(HMD_abundance ~ HeightRange + 
+                            (1 | Site) + 
+                            (1 | Date),
+                          data = merged_df)
+anova(HMD_abundance_model_1)
+
+HMD_abundance_model_2 <- lmer(HMD_abundance ~ Rugosity + 
+                                (1 | Site) + 
+                                (1 | Date),
+                              data = merged_df)
+anova(HMD_abundance_model_2)
+
+HMD_abundance_model_3 <- lmer(HMD_abundance ~ FractalDimension + 
+                                (1 | Site) + 
+                                (1 | Date),
+                              data = merged_df)
+anova(HMD_abundance_model_3)
+
+HMD_abundance_model_4 <- lmer(HMD_abundance ~ Rugosity * HeightRange + 
+                                (1 | Site) + 
+                                (1 | Date),
+                              data = merged_df)
+anova(HMD_abundance_model_4)
+
+
+
+
+
+############################################# complexity and foraging behavior #######################################################
 
 behavior_frequencies <- clean_data %>%
   group_by(RTS_Location, Complexity_Level, Diet_Category, Site, Date) %>%
@@ -336,19 +572,57 @@ behavior_merged <- behavior_frequencies %>%
     by = c("Site", "Complexity_Level")
   )
 
-#Foraging freq
-foraging_freq_model <- lmer(foraging_frequency ~ range_height + RTS_Location + Diet_Category +
-                              (1 | Site) + 
-                              (1 | Date),
-                            data = behavior_merged)
-anova(foraging_freq_model)
 
-#tukey for categories if we want to do that
+
+
+
+#Foraging freq - edit these models
+
+hist(behavior_merged$foraging_frequency)
+
+install.packages("glmmTMB")
+library(glmmTMB)
+
+model_zi <- glmmTMB(
+  foraging_frequency ~ HeightRange + RTS_Location + Diet_Category +
+    (1 | Site) + (1 | Date),
+  ziformula = ~1,
+  family = nbinom2,
+  data = behavior_merged
+)
+
+summary(model_zi)
+
+#tukey for categories
 emmeans(foraging_freq_model, pairwise ~ Diet_Category, adjust = "tukey")
 
+#plot of it
+ggplot(behavior_merged, aes(x=HeightRange, y=foraging_frequency)) + geom_point() +
+  geom_smooth(method = "lm") +
+  labs(
+    title = "",
+    x = "Height Range",
+    y = "Foraging Frequency"
+  ) +
+  theme_minimal(base_size = 16) +
+  theme(
+    plot.title = element_text(size = 20),
+    axis.title = element_text(size = 18),
+    axis.text = element_text(size = 14),
+    legend.position = "none"
+  )
 
-ggplot(behavior_merged, aes(x=range_height, y=foraging_frequency)) + geom_point() +
-  geom_smooth(method = "lm")
+
+
+
+
+
+
+
+
+
+
+
 
 
 
