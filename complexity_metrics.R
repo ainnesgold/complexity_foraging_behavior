@@ -1,6 +1,7 @@
 
 library(tidyverse)
 
+##### first version of data: all reef
 RDH_allreef <- read.csv("RDH_AllReef.csv")
 
 RDH_allreef_sum <- RDH_allreef %>%
@@ -8,7 +9,6 @@ RDH_allreef_sum <- RDH_allreef %>%
   summarise(Rugosity = mean(Rugosity),
             FractalDimension = mean(FractalDimension),
             HeightRange = mean(HeightRange))
-
 
 RDH_long <- RDH_allreef_sum %>%
   mutate(
@@ -31,7 +31,9 @@ RDH_long <- RDH_allreef_sum %>%
     )
   )
 
-ggplot(
+
+
+allreefplot <- ggplot(
   RDH_long,
   aes(
     x = Complexity_Level,
@@ -64,6 +66,91 @@ ggplot(
 
 
 
+ggsave(
+  filename = "outputs/allreefplot.pdf",
+  plot = allreefplot,
+  device = "pdf",
+  width = 10,
+  height = 5
+)
+
+
+
+
+## trying out a different plot
+RDH_allreef <- read.csv("RDH_AllReef_V2.csv")
+
+# RDH_allreef_sum <- RDH_allreef %>%
+#   group_by(Site) %>%
+#   summarise(Rugosity = mean(Rugosity),
+#             FractalDimension = mean(FractalDimension),
+#             HeightRange = mean(HeightRange))
+
+RDH_long <- RDH_allreef %>%
+  pivot_longer(
+    cols = c(Rugosity, FractalDimension, HeightRange),
+    names_to = "Metric",
+    values_to = "Value"
+  ) %>%
+  mutate(
+    Metric = recode(
+      Metric,
+      "Rugosity" = "Rugosity",
+      "FractalDimension" = "Fractal Dimension",
+      "HeightRange" = "Height Range"
+    ))
+
+
+
+allreefplot_v2 <- ggplot(RDH_long, aes(x = as.factor(Site), y = Value, fill = as.factor(Site))) +
+  geom_boxplot()+
+  facet_wrap(~Metric, scales = "free_y") +
+  scale_fill_manual(
+    values = c("#0072B2", "#D55E00"),  # Okabe-Ito palette
+    name = ""
+  ) +
+  labs(
+    x = "Site",
+    y = "Value"
+  ) +
+  theme_bw(base_size = 16) +
+  theme(
+    strip.text = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 16),
+    axis.text = element_text(size = 14),
+    legend.title = element_text(size = 15),
+    legend.text = element_text(size = 14),
+    legend.position = "none",
+    panel.grid.major.x = element_blank()
+  )
+  
+
+ggsave(
+  filename = "outputs/allreefplot_v2.pdf",
+  plot = allreefplot_v2,
+  device = "pdf",
+  width = 10,
+  height = 5
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ #### second version of data: all plot
+
+
 RDH_allplot <- read.csv("RDH_AllPlot.csv")
 
 RDH_allplot_sum <- RDH_allplot %>%
@@ -93,7 +180,7 @@ RDH_long_allplot <- RDH_allplot_sum %>%
     )
   )
 
-ggplot(
+allplotplot <- ggplot(
   RDH_long_allplot,
   aes(
     x = Complexity_Level,
@@ -126,7 +213,13 @@ ggplot(
 
 
 
-
+ggsave(
+  filename = "outputs/allplotplot.pdf",
+  plot = allplotplot,
+  device = "pdf",
+  width = 10,
+  height = 5
+)
 
 
 

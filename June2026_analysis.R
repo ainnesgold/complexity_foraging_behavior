@@ -191,8 +191,7 @@ merged_df <- richness_abundance_sum %>%
 ######## plots ###########
 ## richness
 p1<-ggplot(merged_df, aes(x = HeightRange, y = richness)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
+  geom_point(color = "#0072B2", shape = 16) +
   labs(
     title = "A.",
     x = "Height Range",
@@ -207,8 +206,7 @@ p1<-ggplot(merged_df, aes(x = HeightRange, y = richness)) +
   )
 
 p2<-ggplot(merged_df, aes(x = Rugosity, y = richness)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
+  geom_point(color = "#E69F00", shape = 16) +
   labs(
     title = "B.",
     x = "Rugosity",
@@ -224,8 +222,7 @@ p2<-ggplot(merged_df, aes(x = Rugosity, y = richness)) +
 
 
 p3<-ggplot(merged_df, aes(x = FractalDimension, y = richness)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
+  geom_point(color = "#009E73", shape = 16) +
   labs(
     title = "C.",
     x = "Fractal Dimension",
@@ -242,8 +239,7 @@ p3<-ggplot(merged_df, aes(x = FractalDimension, y = richness)) +
 ## shannon
 
 p4<-ggplot(merged_df, aes(x = HeightRange, y = shannon_index)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
+  geom_point(color = "#0072B2", shape = 17) +
   labs(
     title = "D.",
     x = "Height Range",
@@ -258,8 +254,7 @@ p4<-ggplot(merged_df, aes(x = HeightRange, y = shannon_index)) +
   )
 
 p5<-ggplot(merged_df, aes(x = Rugosity, y = shannon_index)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
+  geom_point(color = "#E69F00", shape = 17) +
   labs(
     title = "E.",
     x = "Rugosity",
@@ -275,8 +270,7 @@ p5<-ggplot(merged_df, aes(x = Rugosity, y = shannon_index)) +
 
 
 p6<-ggplot(merged_df, aes(x = FractalDimension, y = shannon_index)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
+  geom_point(color = "#009E73", shape = 17) +
   labs(
     title = "F.",
     x = "Fractal Dimension",
@@ -293,12 +287,11 @@ p6<-ggplot(merged_df, aes(x = FractalDimension, y = shannon_index)) +
 
 ## abundance
 p7<-ggplot(merged_df, aes(x = HeightRange, y = log(abundance))) +
-  geom_point() +
-  geom_smooth(method = "lm") +
+  geom_point(color = "#0072B2", shape = 15) +
   labs(
     title = "G.",
     x = "Height Range",
-    y = "log(Species Abundance)"
+    y = "log(Overall Abundance)"
   ) +
   theme_minimal(base_size = 16) +
   theme(
@@ -309,12 +302,11 @@ p7<-ggplot(merged_df, aes(x = HeightRange, y = log(abundance))) +
   )
 
 p8<-ggplot(merged_df, aes(x = Rugosity, y = log(abundance))) +
-  geom_point() +
-  geom_smooth(method = "lm") +
+  geom_point(color = "#E69F00", shape = 15) +
   labs(
     title = "H.",
     x = "Rugosity",
-    y = "log(Species Abundance)"
+    y = "log(Overall Abundance)"
   ) +
   theme_minimal(base_size = 16) +
   theme(
@@ -325,12 +317,11 @@ p8<-ggplot(merged_df, aes(x = Rugosity, y = log(abundance))) +
   )
 
 p9<-ggplot(merged_df, aes(x = FractalDimension, y = log(abundance))) +
-  geom_point() +
-  geom_smooth(method = "lm") +
+  geom_point(color = "#009E73", shape = 15) +
   labs(
     title = "I.",
     x = "Fractal Dimension",
-    y = "log(Species Abundance)"
+    y = "log(Overall Abundance)"
   ) +
   theme_minimal(base_size = 16) +
   theme(
@@ -343,8 +334,7 @@ p9<-ggplot(merged_df, aes(x = FractalDimension, y = log(abundance))) +
 ## herbivore abundance
 
 p10<-ggplot(merged_df, aes(x = HeightRange, y = log1p(HMD_abundance))) +
-  geom_point() +
-  geom_smooth(method = "lm") +
+  geom_point(color = "#0072B2", shape = 18) +
   scale_y_continuous(
     expand = expansion(mult = c(0.05, 0.05))
   )+
@@ -363,8 +353,7 @@ p10<-ggplot(merged_df, aes(x = HeightRange, y = log1p(HMD_abundance))) +
 
 
 p11<-ggplot(merged_df, aes(x = Rugosity, y = log1p(HMD_abundance))) +
-  geom_point() +
-  geom_smooth(method = "lm") +
+  geom_point(color = "#E69F00", shape = 18) +
   scale_y_continuous(
     expand = expansion(mult = c(0.05, 0.05))
   )+
@@ -383,10 +372,7 @@ p11<-ggplot(merged_df, aes(x = Rugosity, y = log1p(HMD_abundance))) +
 
 
 p12<-ggplot(merged_df, aes(x = FractalDimension, y = log1p(HMD_abundance))) +
-  geom_point() +
-  geom_smooth(method = "glm",                
-              method.args = list(family = "poisson"),                
-              formula = y ~ x) +
+  geom_point(color = "#009E73", shape = 18) +
   scale_y_continuous(
     expand = expansion(mult = c(0.05, 0.05))
   )+
@@ -411,13 +397,13 @@ complexity_community_plot <- ggarrange(p1 + rremove("xlab"), p2 + rremove("xlab"
           p10, p11 + rremove("ylab"), p12 + rremove("ylab"), nrow = 4, ncol = 3)
 
 
-# ggsave(
-#   filename = "outputs/complexity_community_plot.pdf",
-#   plot = complexity_community_plot,
-#   device = "pdf",
-#   width = 15,
-#   height = 15
-# )
+ggsave(
+  filename = "outputs/complexity_community_plot.pdf",
+  plot = complexity_community_plot,
+  device = "pdf",
+  width = 15,
+  height = 15
+)
 
 
 ######## models ###########
@@ -440,8 +426,10 @@ var(merged_df$richness)
 
 #they are very similar - probably use poisson distribution 
 
+#Site is removed, no effect and lower AIC without it
+
 richness_model_1 <- glmer(
-  richness ~ HeightRange + (1 | Site) + (1 | Date),
+  richness ~ HeightRange + (1 | Date),
   family = poisson,
   data = merged_df
 )
@@ -462,7 +450,7 @@ testDispersion(sim_pois)
 
 
 richness_model_2 <- glmer(
-  richness ~ Rugosity + (1 | Site) + (1 | Date),
+  richness ~ Rugosity + (1 | Date),
   family = poisson,
   data = merged_df
 )
@@ -470,12 +458,14 @@ richness_model_2 <- glmer(
 summary(richness_model_2)
 
 richness_model_3 <- glmer(
-  richness ~ FractalDimension + (1 | Site) + (1 | Date),
+  richness ~ FractalDimension + (1 | Date),
   family = poisson,
   data = merged_df
 )
 
 summary(richness_model_3)
+
+
 
 
 
@@ -640,6 +630,7 @@ behavior_merged <- behavior_frequencies %>%
 
 hist(behavior_merged$foraging_frequency)
 
+hist(behavior_merged$HeightRange)
 
 # transform data since beta distribution cannot handle 0 and 1s. scale everything so it fits in the distribution.
 n <- nrow(behavior_merged)
@@ -656,6 +647,53 @@ summary(freq_model_1)
 AIC(freq_model_1)
 
 
+#visualization of significant results
+
+
+pred_height <- ggpredict(
+  freq_model_1,
+  terms = "HeightRange [all]"
+)
+
+freq_p1 <- ggplot() +
+  # raw data
+  geom_jitter(
+    data = behavior_merged,
+    aes(x = HeightRange,
+        y = ff_beta),
+    height = 0.02,
+    width = 0,
+    alpha = 0.2
+  ) +
+  
+  # confidence interval
+  geom_ribbon(
+    data = pred_height,
+    aes(x = x,
+        ymin = conf.low,
+        ymax = conf.high),
+    alpha = 0.2
+  ) +
+  
+  # model prediction
+  geom_line(
+    data = pred_height,
+    aes(x = x,
+        y = predicted),
+    linewidth = 1.2
+  ) +
+  
+  labs(
+    title = "A.",
+    x = "Height Range",
+    y = "Foraging Frequency"
+  ) +
+  
+  theme_minimal(base_size = 16)
+
+
+#rugosity
+
 freq_model_2 <- glmmTMB(
   ff_beta ~ Rugosity + RTS_Location + Diet_Category,
   family = beta_family(),
@@ -665,6 +703,7 @@ freq_model_2 <- glmmTMB(
 summary(freq_model_2)
 
 
+#interaction model?
 freq_model_3 <- glmmTMB(
   ff_beta ~ HeightRange * Rugosity + RTS_Location + Diet_Category,
   family = beta_family(),
@@ -672,6 +711,46 @@ freq_model_3 <- glmmTMB(
 )
 
 summary(freq_model_3)
+
+#visualize significance?
+newdat <- expand.grid(
+  HeightRange = seq(min(behavior_merged$HeightRange, na.rm = TRUE),
+                    max(behavior_merged$HeightRange, na.rm = TRUE),
+                    length.out = 100),
+  Rugosity = seq(min(behavior_merged$Rugosity, na.rm = TRUE),
+                 max(behavior_merged$Rugosity, na.rm = TRUE),
+                 length.out = 100),
+  RTS_Location = mean(behavior_merged$RTS_Location, na.rm = TRUE),
+  Diet_Category = behavior_merged$Diet_Category[1]  # pick reference level
+)
+
+newdat$pred <- predict(freq_model_3, newdata = newdat, type = "response")
+
+freq_p3 <- ggplot(newdat, aes(x = HeightRange, y = Rugosity, fill = pred)) +
+  geom_tile() +
+  
+  # optional: raw data on top
+  # geom_point(
+  #   data = behavior_merged,
+  #   aes(x = HeightRange, y = Rugosity,
+  #   inherit.aes = FALSE,
+  #   alpha = 0.3,
+  #   size = 1
+  # ) +
+  
+  scale_fill_viridis_c(option = "C") +  # colorblind-friendly
+  labs(
+    x = "Height Range",
+    y = "Rugosity",
+    fill = "Foraging frequency",
+    title = "C."
+  ) +
+  theme_minimal(base_size = 16)
+
+
+
+
+
 
 
 
@@ -683,9 +762,63 @@ freq_model_4 <- glmmTMB(
 
 summary(freq_model_4)
 
+pred_fd <- ggpredict(
+  freq_model_4,
+  terms = "FractalDimension [all]"
+)
+
+freq_p2 <- ggplot() +
+  # raw data
+  geom_jitter(
+    data = behavior_merged,
+    aes(x = FractalDimension,
+        y = ff_beta),
+    height = 0.02,
+    width = 0,
+    alpha = 0.2
+  ) +
+  
+  # confidence interval
+  geom_ribbon(
+    data = pred_fd,
+    aes(x = x,
+        ymin = conf.low,
+        ymax = conf.high),
+    alpha = 0.2
+  ) +
+  
+  # model prediction
+  geom_line(
+    data = pred_fd,
+    aes(x = x,
+        y = predicted),
+    linewidth = 1.2
+  ) +
+  
+  labs(
+    title = "B.",
+    x = "Fractal Dimension",
+    y = "Foraging Frequency"
+  ) +
+  
+  theme_minimal(base_size = 16)
 
 
 
+
+
+
+
+frequencyplot <- ggarrange(freq_p1,freq_p2, freq_p3, nrow=1, ncol=3)
+
+
+ggsave(
+  filename = "outputs/frequencyplot.pdf",
+  plot = frequencyplot,
+  device = "pdf",
+  width = 18,
+  height = 5
+)
 
 
 
@@ -705,40 +838,410 @@ foraging_merged <- clean_data %>%
   )
 
 
-
 hist(foraging_merged$RTS_Location)
 
-#RTS_Location is a discretized measurement of an underlying continuous movement process
-#right skewed
-# gamma log link
+#glmm, gaussian family
 
+#took out random effects - AIC lower without them and no changes to significance
 
 distance_model_1 <- glmmTMB(
   RTS_Location ~ HeightRange + Diet_Category,
-  family = Gamma(link = "log"),
+  family = gaussian(),
   data = foraging_merged
 )
 
 summary(distance_model_1)
 
-library(DHARMa)
-sim <- simulateResiduals(distance_model_1)
+
+
+sim <- simulateResiduals(test_mod)
 plot(sim)
+testUniformity(sim)
 testDispersion(sim)
 testZeroInflation(sim)
 
 
-emm <- emmeans(distance_model_1, ~ Diet_Category)
-pairs(emm, adjust = "tukey", type = "response")
+
+
+
+
+
+
+#visualization of height range effect
+pred_height <- ggpredict(
+  distance_model_1,
+  terms = "HeightRange [all]"
+)
+
+dist_p1 <- ggplot() +
+  # raw data
+  geom_jitter(
+    data = foraging_merged,
+    aes(x = HeightRange,
+        y = RTS_Location),
+    height = 0.02,
+    width = 0,
+    alpha = 0.2
+  ) +
+  
+  # confidence interval
+  geom_ribbon(
+    data = pred_height,
+    aes(x = x,
+        ymin = conf.low,
+        ymax = conf.high),
+    alpha = 0.2
+  ) +
+  
+  # model prediction
+  geom_line(
+    data = pred_height,
+    aes(x = x,
+        y = predicted),
+    linewidth = 1.2
+  ) +
+  
+  labs(
+    title = "A.",
+    x = "Height Range",
+    y = "Foraging Distance"
+  ) +
+  
+  theme_minimal(base_size = 16)
+
+
+
+
+emm_m1 <- emmeans(distance_model_1, ~ Diet_Category, type = "response")
+pairs(emm_m1, adjust = "tukey", type = "response")
+
+emm_df <- as.data.frame(emm_m1)
+
+dist_diet_plot <- ggplot() +
+  # RAW DATA
+  geom_jitter(
+    data = foraging_merged,
+    aes(x = Diet_Category, y = RTS_Location),
+    alpha = 0.15
+  ) +
+  # MODEL ESTIMATES (now follow factor order automatically)
+  geom_point(
+    data = emm_df,
+    aes(x = Diet_Category, y = response),
+    size = 2
+  ) +
+  geom_errorbar(
+    data = emm_df,
+    aes(x = Diet_Category,
+        ymin = asymp.LCL,
+        ymax = asymp.UCL),
+    width = 0.2
+  ) +
+  coord_flip() +
+  labs(title = "",
+       x = "Diet Category",
+       y = "Foraging Distance"
+  ) +
+  theme_minimal(base_size = 16)
 
 
 
 #do rest of distance models
+distance_model_2 <- glmmTMB(
+  RTS_Location ~ Rugosity + Diet_Category,
+  family = Gamma(link = "log"),
+  data = foraging_merged
+)
+
+summary(distance_model_2)
+
+
+pred_rugosity <- ggpredict(
+  distance_model_2,
+  terms = "Rugosity [all]"
+)
+
+dist_p2 <- ggplot() +
+  # raw data
+  geom_jitter(
+    data = foraging_merged,
+    aes(x = Rugosity,
+        y = RTS_Location),
+    height = 0.02,
+    width = 0,
+    alpha = 0.2
+  ) +
+  
+  # confidence interval
+  geom_ribbon(
+    data = pred_rugosity,
+    aes(x = x,
+        ymin = conf.low,
+        ymax = conf.high),
+    alpha = 0.2
+  ) +
+  
+  # model prediction
+  geom_line(
+    data = pred_rugosity,
+    aes(x = x,
+        y = predicted),
+    linewidth = 1.2
+  ) +
+  
+  labs(
+    title = "B.",
+    x = "Rugosity",
+    y = "Foraging Distance"
+  ) +
+  
+  theme_minimal(base_size = 16)
 
 
 
 
-## still need to do number of bites
+
+
+distance_model_3 <- glmmTMB(
+  RTS_Location ~ Rugosity * HeightRange + Diet_Category,
+  family = Gamma(link = "log"),
+  data = foraging_merged
+)
+
+summary(distance_model_3)
+
+#visualize interaction
+newdat <- expand.grid(
+  HeightRange = seq(min(behavior_merged$HeightRange, na.rm = TRUE),
+                    max(behavior_merged$HeightRange, na.rm = TRUE),
+                    length.out = 100),
+  Rugosity = seq(min(behavior_merged$Rugosity, na.rm = TRUE),
+                 max(behavior_merged$Rugosity, na.rm = TRUE),
+                 length.out = 100),
+  Diet_Category = behavior_merged$Diet_Category[1]  # pick reference level
+)
+
+newdat$pred <- predict(distance_model_3, newdata = newdat, type = "response")
+
+dist_interaction_plot <- ggplot(newdat, aes(x = HeightRange, y = Rugosity, fill = pred)) +
+  geom_tile() +
+  
+  # optional: raw data on top
+  # geom_point(
+  #   data = behavior_merged,
+  #   aes(x = HeightRange, y = Rugosity,
+  #   inherit.aes = FALSE,
+  #   alpha = 0.3,
+  #   size = 1
+  # ) +
+  
+  scale_fill_viridis_c(option = "C") +  # colorblind-friendly
+  labs(
+    x = "Height Range",
+    y = "Rugosity",
+    fill = "Foraging Distance",
+    title = "D."
+  ) +
+  theme_minimal(base_size = 16)
+
+
+
+
+distance_model_4 <- glmmTMB(
+  RTS_Location ~ FractalDimension + Diet_Category,
+  family = Gamma(link = "log"),
+  data = foraging_merged
+)
+
+summary(distance_model_4)
+
+
+pred_fd <- ggpredict(
+  distance_model_4,
+  terms = "FractalDimension [all]"
+)
+
+dist_p3 <- ggplot() +
+  # raw data
+  geom_jitter(
+    data = foraging_merged,
+    aes(x = FractalDimension,
+        y = RTS_Location),
+    height = 0.02,
+    width = 0,
+    alpha = 0.2
+  ) +
+  
+  # confidence interval
+  geom_ribbon(
+    data = pred_fd,
+    aes(x = x,
+        ymin = conf.low,
+        ymax = conf.high),
+    alpha = 0.2
+  ) +
+  
+  # model prediction
+  geom_line(
+    data = pred_fd,
+    aes(x = x,
+        y = predicted),
+    linewidth = 1.2
+  ) +
+  
+  labs(
+    title = "C.",
+    x = "Fractal Dimension",
+    y = "Foraging Distance"
+  ) +
+  
+  theme_minimal(base_size = 16)
+
+
+combined_dist_plot <- ggarrange(dist_p1, dist_p2, dist_p3, dist_interaction_plot, nrow=2, ncol=2)
+
+
+ggsave(
+  filename = "outputs/combined_dist_plot.pdf",
+  plot = combined_dist_plot,
+  device = "pdf",
+  width = 10,
+  height = 8
+)
+
+
+
+
+
+ggsave(
+  filename = "outputs/dist_diet_plot.pdf",
+  plot = dist_diet_plot,
+  device = "pdf",
+  width = 10,
+  height = 8
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## number of bites for those that were foraging
+
+bites_df <- clean_data %>%
+  filter(Bites > 0)
+
+bites_df <- bites_df %>%
+  left_join(
+    complexity_sum,
+    by = c("Site", "Complexity_Level")
+  )
+hist(bites_df$Bites)
+
+# var >> mean, so nbinom
+mean(bites_df$Bites)
+var(bites_df$Bites)
+
+bites_model_1 <- glmmTMB(
+  Bites ~ HeightRange + Diet_Category + RTS_Location + (1 | Date),
+  family = nbinom2,
+  data = bites_df
+)
+
+AIC(bites_model_1)
+summary(bites_model_1)
+
+#colinearity test, <2 means there isnʻt any
+car::vif(glm(Bites ~ HeightRange + Diet_Category + RTS_Location, family=poisson, data=bites_df))
+
+
+
+## visualization
+
+pred_height <- ggpredict(bites_model_1, terms = "HeightRange")
+pred_rts <- ggpredict(bites_model_1, terms = "RTS_Location")
+pred_diet <- ggpredict(bites_model_1, terms = "Diet_Category")
+
+ggplot(pred_height, aes(x, predicted)) +
+  geom_line(linewidth = 1.2) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2) +
+  geom_point(data = bites_df,
+             aes(x = HeightRange, y = Bites),
+             alpha = 0.15) +
+  labs(x = "Height Range", y = "Predicted Bites") +
+  theme_minimal(base_size = 16)
+
+
+ggplot(pred_rts, aes(x, predicted)) +
+  geom_line(linewidth = 1.2) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2) +
+  geom_point(data = bites_df,
+             aes(x = RTS_Location, y = Bites),
+             alpha = 0.15) +
+  labs(x = "RTS Location", y = "Predicted Bites") +
+  theme_minimal(base_size = 16)
+
+
+ggplot() +
+  # RAW DATA (background)
+  geom_jitter(
+    data = bites_df,
+    aes(x = Diet_Category, y = Bites),
+    alpha = 0.15,
+    width = 0.15
+  ) +
+  # MODEL ESTIMATES
+  geom_point(
+    data = pred_diet,
+    aes(x = x, y = predicted),
+    size = 3
+  ) +
+  geom_errorbar(
+    data = pred_diet,
+    aes(x = x, ymin = conf.low, ymax = conf.high),
+    width = 0.2
+  ) +
+  coord_flip() +
+  labs(
+    x = "Diet Category",
+    y = "Predicted Bites"
+  ) +
+  theme_minimal(base_size = 16)
+
+
+
+
+
+
+
+
+
+bites_model_2 <- glmmTMB(
+  Bites ~ Rugosity + Diet_Category + RTS_Location + (1 | Date),
+  family = nbinom2,
+  data = bites_df
+)
+
+summary(bites_model_2)
+
+bites_model_3 <- glmmTMB(
+  Bites ~ FractalDimension + Diet_Category + RTS_Location + (1 | Date),
+  family = nbinom2,
+  data = bites_df
+)
+
+summary(bites_model_3)
+
+
+
 
 
 
