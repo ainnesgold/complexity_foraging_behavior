@@ -1358,141 +1358,56 @@ summary(bites_model_1)
 car::vif(glm(Bites ~ HeightRange + Diet_Category + RTS_Location, family=poisson, data=bites_df))
 
 
-
-## visualization
-
-pred_height <- ggpredict(bites_model_1, terms = "HeightRange")
-pred_rts <- ggpredict(bites_model_1, terms = "RTS_Location")
-pred_diet <- ggpredict(bites_model_1, terms = "Diet_Category")
-
-bites_p1 <- ggplot(pred_height, aes(x, predicted)) +
-  geom_line(linewidth = 1.2) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2) +
-  geom_jitter(data = bites_df,
-             aes(x = HeightRange, y = Bites),
-             alpha = 0.15) +
-  labs(x = "Height Range", y = "Predicted Bites") +
-  theme_minimal(base_size = 16)
-
-
-bites_rts_plot<- ggplot(pred_rts, aes(x, predicted)) +
-  geom_line(linewidth = 1.2) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2) +
-  geom_jitter(data = bites_df,
-             aes(x = RTS_Location, y = Bites),
-             alpha = 0.15) +
-  labs(x = "Foraging Distance", y = "Predicted Bites") +
-  theme_minimal(base_size = 16)
-
-# 
-# ggplot() +
-#   # RAW DATA (background)
-#   geom_jitter(
-#     data = bites_df,
-#     aes(x = Diet_Category, y = Bites),
-#     alpha = 0.15,
-#     width = 0.15
-#   ) +
-#   # MODEL ESTIMATES
-#   geom_point(
-#     data = pred_diet,
-#     aes(x = x, y = predicted),
-#     size = 3
-#   ) +
-#   geom_errorbar(
-#     data = pred_diet,
-#     aes(x = x, ymin = conf.low, ymax = conf.high),
-#     width = 0.2
-#   ) +
-#   coord_flip() +
-#   labs(
-#     x = "Diet Category",
-#     y = "Predicted Bites"
-#   ) +
-#   theme_minimal(base_size = 16)
-
-
-
-
-
-
-
-
-
 bites_model_2 <- glmmTMB(
-  Bites ~ Rugosity + Diet_Category + RTS_Location + (1 | Date),
+  Bites ~ Rugosity + RTS_Location + Diet_Category + (1 | Date),
   family = nbinom2,
   data = bites_df
 )
 
 summary(bites_model_2)
-
-pred_height <- ggpredict(bites_model_2, terms = "Rugosity")
-pred_rts <- ggpredict(bites_model_2, terms = "RTS_Location")
-pred_diet <- ggpredict(bites_model_2, terms = "Diet_Category")
-
-bites_p2 <- ggplot(pred_height, aes(x, predicted)) +
-  geom_line(linewidth = 1.2) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2) +
-  geom_jitter(data = bites_df,
-             aes(x = Rugosity, y = Bites),
-             alpha = 0.15) +
-  labs(x = "Rugosity", y = "Predicted Bites") +
-  theme_minimal(base_size = 16)
-
-
-# ggplot(pred_rts, aes(x, predicted)) +
-#   geom_line(linewidth = 1.2) +
-#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2) +
-#   geom_point(data = bites_df,
-#              aes(x = RTS_Location, y = Bites),
-#              alpha = 0.15) +
-#   labs(x = "RTS Location", y = "Predicted Bites") +
-#   theme_minimal(base_size = 16)
-
+AIC(bites_model_2)
 
 bites_model_3 <- glmmTMB(
-  Bites ~ Rugosity*HeightRange + Diet_Category + RTS_Location + (1 | Date),
+  Bites ~ HeightRange*Rugosity + RTS_Location + Diet_Category + (1 | Date),
   family = nbinom2,
   data = bites_df
 )
 
 summary(bites_model_3)
+AIC(bites_model_3)
 
 
 bites_model_4 <- glmmTMB(
-  Bites ~ FractalDimension + Diet_Category + RTS_Location + (1 | Date),
+  Bites ~ FractalDimension + RTS_Location + Diet_Category + (1 | Date),
   family = nbinom2,
   data = bites_df
 )
 
 summary(bites_model_4)
+AIC(bites_model_4)
 
 
-pred_fd <- ggpredict(bites_model_4, terms = "FractalDimension")
-pred_rts <- ggpredict(bites_model_4, terms = "RTS_Location")
-pred_diet <- ggpredict(bites_model_4, terms = "Diet_Category")
 
-bites_p3 <- ggplot(pred_fd, aes(x, predicted)) +
+## visualization
+
+pred_rts <- ggpredict(bites_model_3, terms = "RTS_Location")
+
+bites_rts_plot <- ggplot(pred_rts, aes(x, predicted)) +
   geom_line(linewidth = 1.2) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2) +
   geom_jitter(data = bites_df,
-             aes(x = FractalDimension, y = Bites),
-             alpha = 0.15) +
-  labs(x = "Fractal Dimension", y = "Predicted Bites") +
+              aes(x = RTS_Location, y = Bites),
+              alpha = 0.15) +
+  labs(x = "Distance From Reef (m)", y = "Predicted Bites") +
   theme_minimal(base_size = 16)
 
 
-
-combined_bites_plot <- ggarrange(bites_p1, bites_p2, bites_p3, bites_rts_plot)
-
-
 ggsave(
-  filename = "outputs/combined_bites_plot.pdf",
-  plot = combined_bites_plot,
+  filename = "outputs/bites_rts_plot.pdf",
+  plot = bites_rts_plot,
   device = "pdf",
-  width = 10,
-  height = 10
+  width = 5,
+  height = 5
 )
 
 
