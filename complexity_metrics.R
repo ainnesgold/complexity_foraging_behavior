@@ -66,13 +66,13 @@ allreefplot <- ggplot(
 
 
 
-ggsave(
-  filename = "outputs/allreefplot.pdf",
-  plot = allreefplot,
-  device = "pdf",
-  width = 10,
-  height = 5
-)
+# ggsave(
+#   filename = "outputs/allreefplot.pdf",
+#   plot = allreefplot,
+#   device = "pdf",
+#   width = 10,
+#   height = 5
+# )
 
 
 
@@ -104,6 +104,11 @@ RDH_long <- RDH_allreef %>%
 
 allreefplot_v2 <- ggplot(RDH_long, aes(x = as.factor(Site), y = Value, fill = as.factor(Site))) +
   geom_boxplot()+
+  geom_jitter(
+    width = 0.15,
+    alpha = 0.4,
+    size = 2
+  ) +
   facet_wrap(~Metric, scales = "free_y") +
   scale_fill_manual(
     values = c("#0072B2", "#D55E00"),  # Okabe-Ito palette
@@ -125,13 +130,13 @@ allreefplot_v2 <- ggplot(RDH_long, aes(x = as.factor(Site), y = Value, fill = as
   )
   
 
-ggsave(
-  filename = "outputs/allreefplot_v2.pdf",
-  plot = allreefplot_v2,
-  device = "pdf",
-  width = 10,
-  height = 5
-)
+# ggsave(
+#   filename = "outputs/allreefplot_v2.pdf",
+#   plot = allreefplot_v2,
+#   device = "pdf",
+#   width = 10,
+#   height = 5
+# )
 
 
 

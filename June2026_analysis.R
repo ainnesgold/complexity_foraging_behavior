@@ -5,7 +5,7 @@ library(ggpubr)
 library(glmmTMB)
 library(ggeffects)
 library(DHARMa)
-
+library(gridExtra)
 
 biodiversity_raw <- read.csv("Biodiversity Surveys.csv")
 diet_raw <- read.csv("Diet Categories.csv")
@@ -177,6 +177,71 @@ source("complexity_metrics.R")
 
 complexity_sum <- RDH_allreef_sum
 #complexity_sum <- RDH_allplot_sum
+
+
+
+## Summary figure of complexity and fish community data
+
+
+#log abundances for visualizations
+richness_abundance_sum$log_abundance <- log(richness_abundance_sum$abundance)
+richness_abundance_sum$log_HMD_abundance <- log(richness_abundance_sum$HMD_abundance)
+
+community_long <- richness_abundance_sum %>%
+  pivot_longer(
+    cols = c(richness, log_abundance, log_HMD_abundance),
+    names_to = "Metric",
+    values_to = "Value"
+  ) %>%
+  mutate(
+    Metric = recode(
+      Metric,
+      "richness" = "Richness",
+      "log_abundance" = "log(Abundance)",
+      "log_HMD_abundance" = "log(Herbivore Abundance)"
+    ))
+
+fish_community_plot <- ggplot(community_long, aes(x = as.factor(Site), y = Value, fill = as.factor(Site))) +
+  geom_boxplot()+
+  geom_jitter(
+    width = 0.15,
+    alpha = 0.4,
+    size = 2
+  ) +
+  facet_wrap(~Metric, scales = "free_y") +
+  scale_fill_manual(
+    values = c("#0072B2", "#D55E00"),  # Okabe-Ito palette
+    name = ""
+  ) +
+  labs(
+    x = "Site",
+    y = "Value"
+  ) +
+  theme_bw(base_size = 16) +
+  theme(
+    strip.text = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 16),
+    axis.text = element_text(size = 14),
+    legend.title = element_text(size = 15),
+    legend.text = element_text(size = 14),
+    legend.position = "none",
+    panel.grid.major.x = element_blank()
+  )
+
+
+summary_stats_plot <- ggarrange(fish_community_plot, allreefplot_v2, nrow=2, ncol=1)
+
+
+ggsave(
+  filename = "outputs/summary_stats_plot.pdf",
+  plot = summary_stats_plot,
+  device = "pdf",
+  width = 10,
+  height = 10
+)
+
+
+
 
 
 ################################# complexity + fish community ###############################################################
@@ -778,6 +843,9 @@ ggsave(
 
 ############################################# complexity and foraging behavior #######################################################
 
+
+################################# foraging freq ###############################################################
+
 behavior_frequencies <- clean_data %>%
   group_by(RTS_Location, Complexity_Level, Diet_Category, Site, Date) %>%
   summarise(foraging_frequency = sum(Behavior == "foraging") / n(),
@@ -1015,7 +1083,8 @@ ggsave(
 
 
 
-###### Foraging distance ######
+################################# distance from reef ###############################################################
+
 
 foraging_merged <- clean_data %>%
   left_join(
@@ -1035,7 +1104,7 @@ hist(foraging_merged$RTS_Location)
 
 #glmm, gaussian family
 
-#took out random effects - AIC lower without them and no changes to significance
+#took out Site random effects - AIC lower without it and no changes to significance
 
 distance_model_1 <- glmmTMB(
   RTS_Location ~ HeightRange + Diet_Category + (1|Date),
@@ -1262,7 +1331,7 @@ sig_table <- sig_pairs %>%
     `Adjusted p` = p.value
   )
 
-library(gridExtra)
+
 table_plot <- tableGrob(sig_table, rows = NULL)
 grid.newpage()
 grid.draw(table_plot)
@@ -1314,6 +1383,236 @@ ggsave(
 
 
 
+################################# foraging distance ###############################################################
+
+foraging_only <- foraging_merged %>%
+  filter(Behavior == "foraging")
+
+hist(foraging_only$RTS_Location)
+
+#glmm, gaussian family
+#took out random effects - AIC lower without them and no changes to significance
+
+forage_dist_model_1 <- glmmTMB(
+  RTS_Location ~ HeightRange + Diet_Category + (1|Date),
+  family = gaussian(),
+  data = foraging_only
+)
+
+summary(forage_dist_model_1)
+AIC(forage_dist_model_1)
+
+forage_dist_model_2 <- glmmTMB(
+  RTS_Location ~ Rugosity + Diet_Category + (1|Date),
+  family = gaussian(),
+  data = foraging_only
+)
+
+summary(forage_dist_model_2)
+AIC(forage_dist_model_2)
+
+
+forage_dist_model_3 <- glmmTMB(
+  RTS_Location ~ HeightRange*Rugosity + Diet_Category + (1|Date),
+  family = gaussian(),
+  data = foraging_only
+)
+
+summary(forage_dist_model_3)
+AIC(forage_dist_model_3)
+
+
+forage_dist_model_4 <- glmmTMB(
+  RTS_Location ~ FractalDimension + Diet_Category + (1|Date),
+  family = gaussian(),
+  data = foraging_only
+)
+
+summary(forage_dist_model_4)
+AIC(forage_dist_model_4)
+
+
+## model 3 visualizations
+
+#foraging distance ~ height range
+
+pred_height <- ggpredict(
+  forage_dist_model_3,
+  terms = "HeightRange [all]"
+)
+
+foraging_dist_p1 <- ggplot() +
+  # raw data
+  geom_jitter(
+    data = foraging_only,
+    aes(x = HeightRange,
+        y = RTS_Location),
+    height = 0.02,
+    width = 0,
+    alpha = 0.2
+  ) +
+  
+  # confidence interval
+  geom_ribbon(
+    data = pred_height,
+    aes(x = x,
+        ymin = conf.low,
+        ymax = conf.high),
+    alpha = 0.2
+  ) +
+  
+  # model prediction
+  geom_line(
+    data = pred_height,
+    aes(x = x,
+        y = predicted),
+    linewidth = 1.2
+  ) +
+  
+  labs(
+    title = "A.",
+    x = "Height Range",
+    y = "Foraging Distance"
+  ) +
+  
+  theme_minimal(base_size = 16)
+
+
+
+#foraging distance ~ rugosity
+pred_rugosity <- ggpredict(
+  forage_dist_model_3,
+  terms = "Rugosity [all]"
+)
+
+foraging_dist_p2 <- ggplot() +
+  # raw data
+  geom_jitter(
+    data = foraging_only,
+    aes(x = Rugosity,
+        y = RTS_Location),
+    height = 0.02,
+    width = 0,
+    alpha = 0.2
+  ) +
+  
+  # confidence interval
+  geom_ribbon(
+    data = pred_rugosity,
+    aes(x = x,
+        ymin = conf.low,
+        ymax = conf.high),
+    alpha = 0.2
+  ) +
+  
+  # model prediction
+  geom_line(
+    data = pred_rugosity,
+    aes(x = x,
+        y = predicted),
+    linewidth = 1.2
+  ) +
+  
+  labs(
+    title = "B.",
+    x = "Rugosity",
+    y = "Foraging Distance"
+  ) +
+  
+  theme_minimal(base_size = 16)
+
+
+## combined plot
+
+combined_forage_dist_plot <- ggarrange(foraging_dist_p1, foraging_dist_p2, nrow = 1, ncol=2)
+
+ggsave(
+  filename = "outputs/foraging_dist_plot_m3.pdf",
+  plot = combined_forage_dist_plot,
+  device = "pdf",
+  width = 10,
+  height = 6
+)
+
+
+
+#diet post hoc tests
+emm_m3 <- emmeans(forage_dist_model_3, ~ Diet_Category, type = "response")
+pairs(emm_m3, adjust = "tukey", type = "response")
+emm_df <- as.data.frame(emm_m3)
+
+# Table of significant postdoc Tukey tests
+pairs_out <- pairs(emmeans(forage_dist_model_3, ~ Diet_Category),
+                   adjust = "tukey")
+pairs_df <- as.data.frame(pairs_out)
+sig_pairs <- subset(pairs_df, p.value < 0.05)
+sig_pairs
+
+sig_table <- sig_pairs %>%
+  mutate(
+    estimate = round(estimate, 2),
+    SE = round(SE, 2),
+    z.ratio = round(z.ratio, 2),
+    p.value = signif(p.value, 3)
+  ) %>%
+  select(
+    Contrast = contrast,
+    Estimate = estimate,
+    SE,
+    df,
+    `z value` = z.ratio,
+    `Adjusted p` = p.value
+  )
+
+
+table_plot <- tableGrob(sig_table, rows = NULL)
+grid.newpage()
+grid.draw(table_plot)
+pdf("outputs/foraging_distance_m3_diet_table.pdf", width = 10, height = 6)
+grid.newpage()
+grid.draw(table_plot)
+dev.off()
+
+
+
+
+foraging_dist_diet_plot_m3 <- ggplot() +
+  # RAW DATA
+  geom_jitter(
+    data = foraging_only,
+    aes(x = Diet_Category, y = RTS_Location),
+    alpha = 0.15
+  ) +
+  # MODEL ESTIMATES (now follow factor order automatically)
+  geom_point(
+    data = emm_df,
+    aes(x = Diet_Category, y = emmean),
+    size = 2
+  ) +
+  geom_errorbar(
+    data = emm_df,
+    aes(x = Diet_Category,
+        ymin = asymp.LCL,
+        ymax = asymp.UCL),
+    width = 0.2
+  ) +
+  coord_flip() +
+  labs(title = "",
+       x = "Diet Category",
+       y = "Foraging Distance (m)"
+  ) +
+  theme_minimal(base_size = 16)
+
+
+
+
+ggsave(
+  filename = "outputs/foraging_dist_diet_plot_m3.pdf",
+  plot = foraging_dist_diet_plot_m3,
+  device = "pdf",
+  width = 6,
+  height = 6
+)
 
 
 
@@ -1325,11 +1624,8 @@ ggsave(
 
 
 
+################################# number of bites ###############################################################
 
-
-
-
-## number of bites for those that were foraging
 
 bites_df <- clean_data %>%
   filter(Bites > 0)
