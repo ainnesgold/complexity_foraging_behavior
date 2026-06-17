@@ -236,7 +236,7 @@ ggsave(
   filename = "outputs/summary_stats_plot.pdf",
   plot = summary_stats_plot,
   device = "pdf",
-  width = 10,
+  width = 12,
   height = 10
 )
 
