@@ -180,12 +180,15 @@ source("complexity_metrics.R")
 complexity_sum <- RDH_allreef_sum
 
 #log abundances for visualizations
-richness_abundance_sum$log_abundance <- log(richness_abundance_sum$abundance)
-richness_abundance_sum$log_HMD_abundance <- log(richness_abundance_sum$HMD_abundance)
+#richness_abundance_sum$log_abundance <- log(richness_abundance_sum$abundance)
+#richness_abundance_sum$log_HMD_abundance <- log(richness_abundance_sum$HMD_abundance)
+
+test <- richness_abundance_sum %>%
+  slice_max(HMD_abundance, n = 5)
 
 community_long <- richness_abundance_sum %>%
   pivot_longer(
-    cols = c(richness, log_abundance, log_HMD_abundance),
+    cols = c(richness, abundance, HMD_abundance),
     names_to = "Metric",
     values_to = "Value"
   ) %>%
@@ -193,14 +196,73 @@ community_long <- richness_abundance_sum %>%
     Metric = recode(
       Metric,
       "richness" = "Richness",
-      "log_abundance" = "log(Abundance)",
-      "log_HMD_abundance" = "log(Herbivore Abundance)"
+      "abundance" = "Abundance",
+      "HMD_abundance" = "Herbivore Abundance"
     ))
+
+# abundance_summary_plot <- ggplot(
+#   filter(community_long, Metric != "Richness"),
+#   aes(as.factor(Site), Value, fill = as.factor(Site))
+# ) +
+#   geom_boxplot() +
+#   geom_jitter(width = 0.15, alpha = 0.4, size = 2) +
+#   facet_wrap(~Metric) +
+#   scale_y_continuous(
+#     trans = "log1p"
+#   ) +
+#   scale_fill_manual(
+#         values = c("#0072B2", "#D55E00"),  # Okabe-Ito palette
+#         name = ""
+#       ) +
+#       labs(
+#         x = "Site",
+#         y = "Value"
+#       ) +
+#       theme_bw(base_size = 16) +
+#       theme(
+#         strip.text = element_text(size = 16, face = "bold"),
+#         axis.title = element_text(size = 16),
+#         axis.text = element_text(size = 14),
+#         legend.title = element_text(size = 15),
+#         legend.text = element_text(size = 14),
+#         legend.position = "none",
+#         panel.grid.major.x = element_blank()
+#       )
+# 
+# richness_summary_plot <- ggplot(
+#   filter(community_long, Metric == "Richness"),
+#   aes(as.factor(Site), Value, fill = as.factor(Site))
+# ) +
+#   geom_boxplot() +
+#   geom_jitter(width = 0.15, alpha = 0.4, size = 2) +
+#   facet_wrap(~Metric, scales = "free_y") +
+#     scale_fill_manual(
+#       values = c("#0072B2", "#D55E00"),  # Okabe-Ito palette
+#       name = ""
+#     ) +
+#     labs(
+#       x = "Site",
+#       y = "Value"
+#     ) +
+#     theme_bw(base_size = 16) +
+#     theme(
+#       strip.text = element_text(size = 16, face = "bold"),
+#       axis.title = element_text(size = 16),
+#       axis.text = element_text(size = 14),
+#       legend.title = element_text(size = 15),
+#       legend.text = element_text(size = 14),
+#       legend.position = "none",
+#       panel.grid.major.x = element_blank()
+#     )
+
+
+fish_community_plot <- ggarrange(abundance_summary_plot, richness_summary_plot, nrow = 1)
 
 fish_community_plot <- ggplot(community_long, aes(x = as.factor(Site), y = Value, fill = as.factor(Site))) +
   geom_boxplot()+
   geom_jitter(
     width = 0.15,
+    height = 0,
     alpha = 0.4,
     size = 2
   ) +
@@ -224,9 +286,23 @@ fish_community_plot <- ggplot(community_long, aes(x = as.factor(Site), y = Value
     panel.grid.major.x = element_blank()
   )
 
+library(ggh4x)
+
+library(scales)
+
+fish_community_plot_scaled <- fish_community_plot +
+  facetted_pos_scales(
+    y = list(
+      Metric == "Richness" ~ scale_y_continuous(),
+      Metric == "Abundance" ~ scale_y_log10(),
+      Metric == "Herbivore Abundance" ~
+        scale_y_continuous(trans = pseudo_log_trans(base = 10))
+    )
+  )
 
 
-summary_stats_plot <- ggarrange(allreefplot_v2 + rremove("xlab"), fish_community_plot, nrow=2, ncol=1)
+
+summary_stats_plot <- ggarrange(allreefplot_v2 + rremove("xlab"), fish_community_plot_scaled, nrow=2, ncol=1)
 
 
 ggsave(
@@ -234,7 +310,7 @@ ggsave(
   plot = summary_stats_plot,
   device = "pdf",
   width = 10.5,
-  height = 10
+  height = 10.5
 )
 
 

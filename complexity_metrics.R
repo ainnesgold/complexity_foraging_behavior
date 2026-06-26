@@ -18,7 +18,9 @@ RDH_long <- RDH_allreef %>%
       "HeightRange" = "Height Range"
     ))
 
-
+RDH_allreef %>%
+  filter(Site == 1) %>%
+  summarise(min(Rugosity, na.rm = TRUE))
 
 allreefplot_v2 <- ggplot(RDH_long, aes(x = as.factor(Site), y = Value, fill = as.factor(Site))) +
   geom_boxplot()+
