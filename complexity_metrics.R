@@ -4,6 +4,12 @@ library(tidyverse)
 
 RDH_allreef <- read.csv("RDH_AllReef_V2.csv")
 
+RDH_allreef_sum <- RDH_allreef %>%
+group_by(Site, Complexity_Level) %>%
+  summarize(Rugosity = mean(Rugosity),
+            FractalDimension = mean(FractalDimension),
+            HeightRange = mean(HeightRange))
+
 
 RDH_long <- RDH_allreef %>%
   pivot_longer(
@@ -19,8 +25,8 @@ RDH_long <- RDH_allreef %>%
     ))
 
 RDH_allreef %>%
-  filter(Site == 1) %>%
-  summarise(min(Rugosity, na.rm = TRUE))
+  filter(Site == 2) %>%
+  summarise(max(Rugosity, na.rm = TRUE))
 
 allreefplot_v2 <- ggplot(RDH_long, aes(x = as.factor(Site), y = Value, fill = as.factor(Site))) +
   geom_boxplot()+

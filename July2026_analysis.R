@@ -8,6 +8,8 @@ library(DHARMa)
 library(gridExtra)
 library(grid)
 library(multcomp)
+library(ggh4x)
+library(scales)
 
 biodiversity_raw <- read.csv("Biodiversity Surveys.csv")
 diet_raw <- read.csv("Diet Categories.csv")
@@ -35,7 +37,7 @@ bd_merged_data <- bd_merged_data %>%
 
 # Remove "Adult" and "Juvenile" columns
 bd_merged_data <- bd_merged_data %>%
-  select(-Adult, -Juvenile)
+  dplyr::select(-Adult, -Juvenile)
 
 # Getting a total fish count by survey
 bd_totals <- bd_merged_data %>%
@@ -122,7 +124,7 @@ full_data <- full_data %>%
 
 # Removing columns with missing data between foraging and video data sets
 clean_data <- full_data %>%
-  select(-RTS, -Camera_Position, -Limu_Bait, -TimeIn_Frame, -TimeOut_Frame, -Time_Seconds)
+  dplyr::select(-RTS, -Camera_Position, -Limu_Bait, -TimeIn_Frame, -TimeOut_Frame, -Time_Seconds)
 
 # Fixing the complexity levels to go from lowest to highest
 clean_data$Complexity_Level <- factor(clean_data$Complexity_Level, levels = c("Low", "Medium", "High"))
@@ -255,8 +257,7 @@ community_long <- richness_abundance_sum %>%
 #       panel.grid.major.x = element_blank()
 #     )
 
-
-fish_community_plot <- ggarrange(abundance_summary_plot, richness_summary_plot, nrow = 1)
+#fish_community_plot <- ggarrange(abundance_summary_plot, richness_summary_plot, nrow = 1)
 
 fish_community_plot <- ggplot(community_long, aes(x = as.factor(Site), y = Value, fill = as.factor(Site))) +
   geom_boxplot()+
@@ -286,9 +287,7 @@ fish_community_plot <- ggplot(community_long, aes(x = as.factor(Site), y = Value
     panel.grid.major.x = element_blank()
   )
 
-library(ggh4x)
 
-library(scales)
 
 fish_community_plot_scaled <- fish_community_plot +
   facetted_pos_scales(
@@ -1281,7 +1280,7 @@ bites_rts_plot <- ggplot(pred_rts, aes(x, predicted)) +
   geom_jitter(data = bites_df,
               aes(x = RTS_Location, y = Bites),
               alpha = 0.15) +
-  labs(x = "Distance From Reef (m)", y = "Number of Bites") +
+  labs(x = "Foraging Distance (m)", y = "Number of Bites") +
   theme_minimal(base_size = 16)
 
 
