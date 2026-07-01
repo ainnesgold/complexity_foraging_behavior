@@ -622,8 +622,9 @@ HMD_abundance_plot <- ggplot() +
         linetype = HR_group),
     linewidth = 1.2
   ) +
-  scale_y_log10()+
-  #scale_y_continuous(trans = "sqrt") +
+  scale_y_continuous(
+    trans = pseudo_log_trans(base = 10)
+  ) +
   scale_color_manual(values = c("#0072B2", "black", "#D55E00")) +
   scale_linetype_manual(values = c("dashed", "solid", "dotted")) +
   
