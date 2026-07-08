@@ -259,7 +259,7 @@ community_long <- richness_abundance_sum %>%
 
 #fish_community_plot <- ggarrange(abundance_summary_plot, richness_summary_plot, nrow = 1)
 
-fish_community_plot <- ggplot(community_long, aes(x = as.factor(Site), y = Value, fill = as.factor(Site))) +
+fish_community_plot <- ggplot(community_long, aes(x = "", y = Value, fill = Metric)) +
   geom_boxplot()+
   geom_jitter(
     width = 0.15,
@@ -269,11 +269,14 @@ fish_community_plot <- ggplot(community_long, aes(x = as.factor(Site), y = Value
   ) +
   facet_wrap(~Metric, scales = "free_y") +
   scale_fill_manual(
-    values = c("#0072B2", "#D55E00"),  # Okabe-Ito palette
-    name = ""
+    values = c(
+      "Abundance" = "#CC79A7",   # blue
+      "Herbivore Abundance" = "#E69F00",       # bluish green
+      "Richness" = "#56B4E9"
+    )
   ) +
   labs(
-    x = "Site",
+    x = "",
     y = "Value"
   ) +
   theme_bw(base_size = 16) +
@@ -463,11 +466,11 @@ AIC(abundance_model_3)
 
 ## Model 3 visualization
 
+## predication grid
 
 HR_mean <- mean(merged_df$HeightRange, na.rm = TRUE)
 HR_sd   <- sd(merged_df$HeightRange, na.rm = TRUE)
 
-# New prediction grid
 newdat <- expand.grid(
   Rugosity = seq(min(merged_df$Rugosity),
                  max(merged_df$Rugosity),
@@ -480,53 +483,51 @@ newdat <- expand.grid(
 
 
 # Predict (response scale)
-newdat$pred <- predict(
+pred <- predict(
   abundance_model_3,
   newdata = newdat,
-  type = "response",
+  type = "link",
+  se.fit = TRUE,
   re.form = NA
 )
 
-# Label SD groups
+
+# Link-scale estimates
+newdat$fit <- pred$fit
+newdat$se  <- pred$se.fit
+
+# 95% CI on link scale, then back-transform
+newdat$pred <- exp(newdat$fit)
+
+newdat$lwr <- exp(
+  newdat$fit - 1.96 * newdat$se
+)
+
+newdat$upr <- exp(
+  newdat$fit + 1.96 * newdat$se
+)
+
+
+
 newdat$HR_group <- factor(
   newdat$HeightRange,
+  levels = c(HR_mean - HR_sd,
+             HR_mean,
+             HR_mean + HR_sd),
   labels = c("-1 SD", "Mean", "+1 SD")
 )
 
 
 abundance_plot <- ggplot() +
-
-  # raw data
-  geom_point(
-    data = merged_df,
-    aes(x = Rugosity, y = abundance),
-    alpha = 0.25
-  ) +
-
-  # model lines
-  geom_line(
-    data = newdat,
-    aes(x = Rugosity,
-        y = pred,
-        color = HR_group,
-        linetype = HR_group),
-    linewidth = 1.2
-  ) +
-  scale_y_log10()+
-  #scale_y_continuous(trans = "sqrt") +
+  geom_ribbon(data = newdat, aes(x = Rugosity, ymin = lwr, ymax = upr, fill = HR_group), alpha = 0.2, color = NA) +
+  geom_point(data = merged_df, aes(x = Rugosity, y = abundance), alpha = 0.25) +
+  geom_line(data = newdat, aes(x = Rugosity, y = pred, color = HR_group, linetype = HR_group), linewidth = 1.2) +
+  scale_y_log10() +
   scale_color_manual(values = c("#0072B2", "black", "#D55E00")) +
+  scale_fill_manual(values = c("#0072B2", "black", "#D55E00")) +
   scale_linetype_manual(values = c("dashed", "solid", "dotted")) +
-
-  labs(
-    x = "Rugosity",
-    y = "Abundance",
-    color = "Height Range",
-    linetype = "Height Range",
-    title = "A"
-  ) +
-
+  labs(x = "Rugosity", y = "Abundance", color = "Height Range", fill = "Height Range", linetype = "Height Range", title = "A") +
   theme_minimal(base_size = 16)
-
 
 
 
@@ -584,18 +585,23 @@ HMD_abundance_model_3 <- glmmTMB(
 summary(HMD_abundance_model_3)
 AIC(HMD_abundance_model_3)
 
-
-
 ### visualization for herbivore model 3
 
-
-# Predict (response scale)
-newdat$HMD_pred <- predict(
+# predictions
+pred <- predict(
   HMD_abundance_model_3,
   newdata = newdat,
-  type = "response",
+  type = "link",
+  se.fit = TRUE,
   re.form = NA
 )
+
+newdat$HMD_fit <- pred$fit
+newdat$HMD_se <- pred$se.fit
+
+newdat$HMD_pred <- exp(newdat$HMD_fit)
+newdat$HMD_lwr <- exp(newdat$HMD_fit - 1.96 * newdat$HMD_se)
+newdat$HMD_upr <- exp(newdat$HMD_fit + 1.96 * newdat$HMD_se)
 
 # Label SD groups
 newdat$HR_group <- factor(
@@ -605,38 +611,21 @@ newdat$HR_group <- factor(
 
 
 HMD_abundance_plot <- ggplot() +
-  
-  # raw data
-  geom_point(
-    data = merged_df,
-    aes(x = Rugosity, y = HMD_abundance),
-    alpha = 0.25
-  ) +
-  
-  # model lines
-  geom_line(
-    data = newdat,
-    aes(x = Rugosity,
-        y = HMD_pred,
-        color = HR_group,
-        linetype = HR_group),
-    linewidth = 1.2
-  ) +
-  scale_y_continuous(
-    trans = pseudo_log_trans(base = 10)
-  ) +
+  geom_ribbon(data = newdat, aes(x = Rugosity, ymin = HMD_lwr, ymax = HMD_upr, fill = HR_group), alpha = 0.2, color = NA) +
+  geom_point(data = merged_df, aes(x = Rugosity, y = HMD_abundance), alpha = 0.25) +
+  geom_line(data = newdat, aes(x = Rugosity, y = HMD_pred, color = HR_group, linetype = HR_group), linewidth = 1.2) +
+  scale_y_continuous(trans = pseudo_log_trans(base = 10)) +
   scale_color_manual(values = c("#0072B2", "black", "#D55E00")) +
+  scale_fill_manual(values = c("#0072B2", "black", "#D55E00")) +
   scale_linetype_manual(values = c("dashed", "solid", "dotted")) +
-  
-  labs(
-    x = "Rugosity",
-    y = "Herbivore Abundance",
-    color = "Height Range",
-    linetype = "Height Range",
-    title = "B"
-  ) +
-  
+  labs(x = "Rugosity", y = "Herbivore Abundance", color = "Height Range", fill = "Height Range", linetype = "Height Range", title = "B") +
   theme_minimal(base_size = 16)
+
+
+
+
+
+
 
 
 
@@ -750,14 +739,33 @@ newdat <- expand.grid(
   Diet_Category = levels(behavior_merged$Diet_Category)
 )
 
-newdat$pred <- predict(freq_model_3, newdata=newdat, type="response", re.form=NA)
+
+# Predictions + CIs (link scale)
+pred <- predict(
+  freq_model_3,
+  newdata = newdat,
+  type = "link",
+  se.fit = TRUE,
+  re.form = NA
+)
+
+newdat$fit <- pred$fit
+newdat$se <- pred$se.fit
+
+newdat$pred <- plogis(newdat$fit)
+newdat$lwr <- plogis(newdat$fit - 1.96 * newdat$se)
+newdat$upr <- plogis(newdat$fit + 1.96 * newdat$se)
+
 
 # average over diet
 newdat <- newdat %>%
   group_by(Rugosity, HeightRange) %>%
-  summarise(pred = mean(pred), .groups="drop")
-
-
+  summarise(
+    pred = mean(pred),
+    lwr = mean(lwr),
+    upr = mean(upr),
+    .groups = "drop"
+  )
 
 
 # Label SD groups
@@ -768,38 +776,14 @@ newdat$HR_group <- factor(
 
 
 freq_plot <- ggplot() +
-  
-  # raw data
-  geom_point(
-    data = behavior_merged,
-    aes(x = Rugosity, y = ff_beta),
-    alpha = 0.25
-  ) +
-  
-  # model lines
-  geom_line(
-    data = newdat,
-    aes(x = Rugosity,
-        y = pred,
-        color = HR_group,
-        linetype = HR_group),
-    linewidth = 1.2
-  ) +
-  #scale_y_continuous(trans = "sqrt") +
+  geom_ribbon(data = newdat, aes(x = Rugosity, ymin = lwr, ymax = upr, fill = HR_group), alpha = 0.2, color = NA) +
+  geom_jitter(data = behavior_merged, aes(x = Rugosity, y = ff_beta), width = 0.05, height = 0.02, alpha = 0.25) +
+  geom_line(data = newdat, aes(x = Rugosity, y = pred, color = HR_group, linetype = HR_group), linewidth = 1.2) +
   scale_color_manual(values = c("#0072B2", "black", "#D55E00")) +
+  scale_fill_manual(values = c("#0072B2", "black", "#D55E00")) +
   scale_linetype_manual(values = c("dashed", "solid", "dotted")) +
-  
-  labs(
-    x = "Rugosity",
-    y = "Foraging Frequency",
-    color = "Height Range",
-    linetype = "Height Range",
-    title = "A"
-  ) +
-  
+  labs(x = "Rugosity", y = "Foraging Frequency", color = "Height Range", fill = "Height Range", linetype = "Height Range", title = "A") +
   theme_minimal(base_size = 16)
-
-
 
 
 
@@ -892,17 +876,31 @@ newdat <- expand.grid(
   Diet_Category = levels(foraging_merged$Diet_Category)
 )
 
-newdat$pred <- predict(distance_model_3, newdata=newdat, type="response", re.form=NA)
+
+pred <- predict(
+  distance_model_3,
+  newdata = newdat,
+  type = "response",
+  se.fit = TRUE,
+  re.form = NA
+)
+
+newdat$pred <- pred$fit
+newdat$lwr <- pred$fit - 1.96 * pred$se.fit
+newdat$upr <- pred$fit + 1.96 * pred$se.fit
+
 
 # average over diet
 newdat <- newdat %>%
   group_by(Rugosity, HeightRange) %>%
-  summarise(pred = mean(pred), .groups="drop")
+  summarise(
+    pred = mean(pred),
+    lwr = mean(lwr),
+    upr = mean(upr),
+    .groups = "drop"
+  )
 
 
-
-
-# Label SD groups
 newdat$HR_group <- factor(
   newdat$HeightRange,
   labels = c("-1 SD", "Mean", "+1 SD")
@@ -910,35 +908,21 @@ newdat$HR_group <- factor(
 
 
 dist_plot <- ggplot() +
-  
-  # raw data
-  geom_point(
-    data = foraging_merged,
-    aes(x = Rugosity, y = RTS_Location),
-    alpha = 0.25
-  ) +
-  
-  # model lines
-  geom_line(
-    data = newdat,
-    aes(x = Rugosity,
-        y = pred,
-        color = HR_group,
-        linetype = HR_group),
-    linewidth = 1.2
-  ) +
-  #scale_y_continuous(trans = "sqrt") +
+  geom_ribbon(data = newdat, aes(x = Rugosity, ymin = lwr, ymax = upr, fill = HR_group), alpha = 0.2, color = NA) +
+  geom_jitter(data = foraging_merged, aes(x = Rugosity, y = RTS_Location), width = 0.05, height = 0.1, alpha = 0.25) +
+  geom_line(data = newdat, aes(x = Rugosity, y = pred, color = HR_group, linetype = HR_group), linewidth = 1.2) +
   scale_color_manual(values = c("#0072B2", "black", "#D55E00")) +
+  scale_fill_manual(values = c("#0072B2", "black", "#D55E00")) +
   scale_linetype_manual(values = c("dashed", "solid", "dotted")) +
-  
-  labs(
-    x = "Rugosity",
-    y = "Distance from Reef",
-    color = "Height Range",
-    linetype = "Height Range",
-    title = "B"
-  ) +
+  labs(x = "Rugosity", y = "Distance from Reef", color = "Height Range", fill = "Height Range", linetype = "Height Range", title = "B") +
   theme_minimal(base_size = 16)
+
+
+
+
+
+
+
 
 
 
@@ -1071,16 +1055,32 @@ newdat <- expand.grid(
   Diet_Category = levels(foraging_only$Diet_Category)
 )
 
-newdat$pred <- predict(forage_dist_model_3, newdata=newdat, type="response", re.form=NA)
+
+# Predictions
+pred <- predict(
+  forage_dist_model_3,
+  newdata = newdat,
+  type = "response",
+  se.fit = TRUE,
+  re.form = NA
+)
+
+newdat$pred <- pred$fit
+newdat$lwr <- pred$fit - 1.96 * pred$se.fit
+newdat$upr <- pred$fit + 1.96 * pred$se.fit
+
 
 # average over diet
 newdat <- newdat %>%
   group_by(Rugosity, HeightRange) %>%
-  summarise(pred = mean(pred), .groups="drop")
+  summarise(
+    pred = mean(pred),
+    lwr = mean(lwr),
+    upr = mean(upr),
+    .groups = "drop"
+  )
 
 
-
-# Label SD groups
 newdat$HR_group <- factor(
   newdat$HeightRange,
   labels = c("-1 SD", "Mean", "+1 SD")
@@ -1088,44 +1088,16 @@ newdat$HR_group <- factor(
 
 
 foraging_dist_plot <- ggplot() +
-  
-  # raw data
-  geom_point(
-    data = foraging_only,
-    aes(x = Rugosity, y = RTS_Location),
-    alpha = 0.25
-  ) +
-  
-  # model lines
-  geom_line(
-    data = newdat,
-    aes(x = Rugosity,
-        y = pred,
-        color = HR_group,
-        linetype = HR_group),
-    linewidth = 1.2
-  ) +
-  #scale_y_continuous(trans = "sqrt") +
+  geom_ribbon(data = newdat, aes(x = Rugosity, ymin = lwr, ymax = upr, fill = HR_group), alpha = 0.2, color = NA) +
+  geom_jitter(data = foraging_only, aes(x = Rugosity, y = RTS_Location), width = 0.05, height = 0.1, alpha = 0.25) +
+  geom_line(data = newdat, aes(x = Rugosity, y = pred, color = HR_group, linetype = HR_group), linewidth = 1.2) +
   scale_color_manual(values = c("#0072B2", "black", "#D55E00")) +
+  scale_fill_manual(values = c("#0072B2", "black", "#D55E00")) +
   scale_linetype_manual(values = c("dashed", "solid", "dotted")) +
-  
-  labs(
-    x = "Rugosity",
-    y = "Foraging Distance",
-    color = "Height Range",
-    linetype = "Height Range",
-    title = "C"
-  ) +
+  labs(x = "Rugosity", y = "Foraging Distance", color = "Height Range", fill = "Height Range", linetype = "Height Range", title = "C") +
   theme_minimal(base_size = 16) +
-  annotate(
-    "text",
-    x = -Inf,
-    y = Inf,
-    label = "*Marginally significant interaction (p = 0.057)",
-    hjust = -0.1,
-    vjust = 1.5,
-    size = 5
-  )
+  annotate("text", x = -Inf, y = Inf, label = "*Marginally significant interaction (p = 0.057)", hjust = -0.1, vjust = 1.5, size = 5)
+
 
 
 

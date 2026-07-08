@@ -28,20 +28,23 @@ RDH_allreef %>%
   filter(Site == 2) %>%
   summarise(max(Rugosity, na.rm = TRUE))
 
-allreefplot_v2 <- ggplot(RDH_long, aes(x = as.factor(Site), y = Value, fill = as.factor(Site))) +
-  geom_boxplot()+
+allreefplot_v2 <- ggplot(RDH_long, aes(x = "", y = Value, fill = Metric)) +
+  geom_boxplot() +
   geom_jitter(
     width = 0.15,
     alpha = 0.4,
-    size = 2
+    size = 2,
+    show.legend = FALSE
   ) +
   facet_wrap(~Metric, scales = "free_y") +
   scale_fill_manual(
-    values = c("#0072B2", "#D55E00"),  # Okabe-Ito palette
-    name = ""
+    values = c(
+      "Rugosity" = "#0072B2",   # blue
+      "Height Range" = "#009E73"       # bluish green
+    )
   ) +
   labs(
-    x = "Site",
+    x = NULL,
     y = "Value"
   ) +
   theme_bw(base_size = 16) +
@@ -49,11 +52,37 @@ allreefplot_v2 <- ggplot(RDH_long, aes(x = as.factor(Site), y = Value, fill = as
     strip.text = element_text(size = 16, face = "bold"),
     axis.title = element_text(size = 16),
     axis.text = element_text(size = 14),
-    legend.title = element_text(size = 15),
-    legend.text = element_text(size = 14),
+    axis.ticks.x = element_blank(),
     legend.position = "none",
     panel.grid.major.x = element_blank()
   )
-  
+
+# allreefplot_v2 <- ggplot(RDH_long, aes(x = as.factor(Site), y = Value, fill = as.factor(Site))) +
+#   geom_boxplot()+
+#   geom_jitter(
+#     width = 0.15,
+#     alpha = 0.4,
+#     size = 2
+#   ) +
+#   facet_wrap(~Metric, scales = "free_y") +
+#   scale_fill_manual(
+#     values = c("#0072B2", "#D55E00"),  # Okabe-Ito palette
+#     name = ""
+#   ) +
+#   labs(
+#     x = "Site",
+#     y = "Value"
+#   ) +
+#   theme_bw(base_size = 16) +
+#   theme(
+#     strip.text = element_text(size = 16, face = "bold"),
+#     axis.title = element_text(size = 16),
+#     axis.text = element_text(size = 14),
+#     legend.title = element_text(size = 15),
+#     legend.text = element_text(size = 14),
+#     legend.position = "none",
+#     panel.grid.major.x = element_blank()
+#   )
+#   
 
 
