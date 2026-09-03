@@ -1,3 +1,6 @@
+
+## Full analysis for "Coral reef habitat complexity mediates reef fish foraging behavior"
+
 library(tidyverse)
 library(lmerTest)
 library(emmeans)
@@ -16,26 +19,26 @@ diet_raw <- read.csv("Diet Categories.csv")
 foraging_raw <- read.csv("Foraging Surveys.csv")
 video_raw <- read.csv("Video Surveys.csv")
 
-#counting how many video surveys
+# Counting how many video surveys
 video_raw %>%
   count(Date, Site, Complexity_Level)
 
 
-# Merge the biodiversity data set and diet categories by "Genus" and "Species" columns
+# Merge the biodiversity data set and diet categories by Genus and Species columns
 bd_merged_data <- merge(biodiversity_raw, diet_raw, by = c("Genus", "Species"), all.x = TRUE)
 
-# Remove data points with genus = "chaetodontidae" and species = "unknown"
+# Remove data points with genus = "chaetodontidae" because the species is unknown
 bd_merged_data <- bd_merged_data %>%
   filter(Genus != "chaetodontidae")
 
 # Fixing the complexity levels to go from lowest to highest
 bd_merged_data$Complexity_Level <- factor(bd_merged_data$Complexity_Level, levels = c("Low", "Medium", "High"))
 
-# Remove data points with Site equal to 3
+# Remove data points with Site equal to 3 - originally tried a third site, but ended up not being able to do many surveys there
 bd_merged_data <- bd_merged_data %>%
   filter(Site != 3)
 
-# Remove "Adult" and "Juvenile" columns
+# Remove "Adult" and "Juvenile" columns - not using in this analysis
 bd_merged_data <- bd_merged_data %>%
   dplyr::select(-Adult, -Juvenile)
 
@@ -181,10 +184,6 @@ source("complexity_metrics.R")
 
 complexity_sum <- RDH_allreef_sum
 
-#log abundances for visualizations
-#richness_abundance_sum$log_abundance <- log(richness_abundance_sum$abundance)
-#richness_abundance_sum$log_HMD_abundance <- log(richness_abundance_sum$HMD_abundance)
-
 test <- richness_abundance_sum %>%
   slice_max(HMD_abundance, n = 5)
 
@@ -202,62 +201,6 @@ community_long <- richness_abundance_sum %>%
       "HMD_abundance" = "Herbivore Abundance"
     ))
 
-# abundance_summary_plot <- ggplot(
-#   filter(community_long, Metric != "Richness"),
-#   aes(as.factor(Site), Value, fill = as.factor(Site))
-# ) +
-#   geom_boxplot() +
-#   geom_jitter(width = 0.15, alpha = 0.4, size = 2) +
-#   facet_wrap(~Metric) +
-#   scale_y_continuous(
-#     trans = "log1p"
-#   ) +
-#   scale_fill_manual(
-#         values = c("#0072B2", "#D55E00"),  # Okabe-Ito palette
-#         name = ""
-#       ) +
-#       labs(
-#         x = "Site",
-#         y = "Value"
-#       ) +
-#       theme_bw(base_size = 16) +
-#       theme(
-#         strip.text = element_text(size = 16, face = "bold"),
-#         axis.title = element_text(size = 16),
-#         axis.text = element_text(size = 14),
-#         legend.title = element_text(size = 15),
-#         legend.text = element_text(size = 14),
-#         legend.position = "none",
-#         panel.grid.major.x = element_blank()
-#       )
-# 
-# richness_summary_plot <- ggplot(
-#   filter(community_long, Metric == "Richness"),
-#   aes(as.factor(Site), Value, fill = as.factor(Site))
-# ) +
-#   geom_boxplot() +
-#   geom_jitter(width = 0.15, alpha = 0.4, size = 2) +
-#   facet_wrap(~Metric, scales = "free_y") +
-#     scale_fill_manual(
-#       values = c("#0072B2", "#D55E00"),  # Okabe-Ito palette
-#       name = ""
-#     ) +
-#     labs(
-#       x = "Site",
-#       y = "Value"
-#     ) +
-#     theme_bw(base_size = 16) +
-#     theme(
-#       strip.text = element_text(size = 16, face = "bold"),
-#       axis.title = element_text(size = 16),
-#       axis.text = element_text(size = 14),
-#       legend.title = element_text(size = 15),
-#       legend.text = element_text(size = 14),
-#       legend.position = "none",
-#       panel.grid.major.x = element_blank()
-#     )
-
-#fish_community_plot <- ggarrange(abundance_summary_plot, richness_summary_plot, nrow = 1)
 
 fish_community_plot <- ggplot(community_long, aes(x = "", y = Value, fill = Metric)) +
   geom_boxplot()+
@@ -303,17 +246,19 @@ fish_community_plot_scaled <- fish_community_plot +
   )
 
 
+###################################  FIGURE 2 SUMMARY STATS ######################################################
 
 summary_stats_plot <- ggarrange(allreefplot_v2 + rremove("xlab"), fish_community_plot_scaled, nrow=2, ncol=1)
 
+#save plot
 
-ggsave(
-  filename = "outputs/summary_stats_plot.pdf",
-  plot = summary_stats_plot,
-  device = "pdf",
-  width = 10.5,
-  height = 10.5
-)
+# ggsave(
+#   filename = "outputs/summary_stats_plot.pdf",
+#   plot = summary_stats_plot,
+#   device = "pdf",
+#   width = 10.5,
+#   height = 10.5
+# )
 
 
 
@@ -331,7 +276,7 @@ merged_df <- richness_abundance_sum %>%
 
 
 
-######## models ###########
+############################# models ###########################
 
 #using glmer for count data: richness, abundance, HMD abundance
   #poisson if there is no overdispersion, negative binomial if there is
@@ -344,13 +289,11 @@ hist(merged_df$HMD_abundance) #skewed
 
 
 # Effect of complexity on richness
-
 #overdispersion if var >> mean
 mean(merged_df$richness)
 var(merged_df$richness)
 
-#they are very similar - probably use poisson distribution 
-
+#they are very similar -  use poisson distribution 
 #Site is removed, no effect and lower AIC without it
 
 richness_model_1 <- glmer(
@@ -368,9 +311,7 @@ AIC(richness_model_1)
 sim_pois <- simulateResiduals(richness_model_1)
 plot(sim_pois)
 testDispersion(sim_pois)
-
 #large p value so no overdispersion, poisson model is good
-
 
 richness_model_2 <- glmer(
   richness ~ Rugosity + (1 | Date),
@@ -380,7 +321,6 @@ richness_model_2 <- glmer(
 
 summary(richness_model_2)
 AIC(richness_model_2)
-
 
 richness_model_3 <- glmer(
   richness ~ HeightRange*Rugosity + (1 | Date),
@@ -419,13 +359,9 @@ summary(shannon_model_3)
 
 # Effect of complexity on abundance
 
-## if var >> mean, means it is overdispersed and need negative binomial distribution
-
 mean(merged_df$abundance)
 var(merged_df$abundance)
-##var is >> mean, probably negative binomial distribution
-
-
+##var is >> mean,  negative binomial distribution
 #removed site as a random effect, lower model AIC without it and it did not account for much variance. 
 #No change in significant results once site was removed
 
@@ -517,7 +453,7 @@ newdat$HR_group <- factor(
   labels = c("-1 SD", "Mean", "+1 SD")
 )
 
-
+#figure 3a
 abundance_plot <- ggplot() +
   geom_ribbon(data = newdat, aes(x = Rugosity, ymin = lwr, ymax = upr, fill = HR_group), alpha = 0.2, color = NA) +
   geom_point(data = merged_df, aes(x = Rugosity, y = abundance), alpha = 0.25) +
@@ -532,21 +468,10 @@ abundance_plot <- ggplot() +
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 # Effect of complexity on herbivore abundance
 mean(merged_df$HMD_abundance)
 var(merged_df$HMD_abundance)
-##var is >> mean, probably negative binomial distribution
+##var is >> mean,  negative binomial distribution
 
 
 #removed site as a random effect, lower model AIC without it and it did not account for much variance. 
@@ -609,7 +534,7 @@ newdat$HR_group <- factor(
   labels = c("-1 SD", "Mean", "+1 SD")
 )
 
-
+# figure 3b
 HMD_abundance_plot <- ggplot() +
   geom_ribbon(data = newdat, aes(x = Rugosity, ymin = HMD_lwr, ymax = HMD_upr, fill = HR_group), alpha = 0.2, color = NA) +
   geom_point(data = merged_df, aes(x = Rugosity, y = HMD_abundance), alpha = 0.25) +
@@ -627,17 +552,19 @@ HMD_abundance_plot <- ggplot() +
 
 
 
-
+############################################  FIGURE 3: complexity effects on abundance & herbivore abundance ########################
 
 combined_abundance_plot <- ggarrange(abundance_plot, HMD_abundance_plot, nrow = 1, ncol = 2, common.legend = TRUE, legend = "top")
 
-ggsave(
-  filename = "outputs/combined_abundance_plot.pdf",
-  plot = combined_abundance_plot,
-  device = "pdf",
-  width = 10,
-  height = 6
-)
+# save plot
+
+# ggsave(
+#   filename = "outputs/combined_abundance_plot.pdf",
+#   plot = combined_abundance_plot,
+#   device = "pdf",
+#   width = 10,
+#   height = 6
+# )
 
 
 
@@ -774,7 +701,7 @@ newdat$HR_group <- factor(
   labels = c("-1 SD", "Mean", "+1 SD")
 )
 
-
+# figure 4a
 freq_plot <- ggplot() +
   geom_ribbon(data = newdat, aes(x = Rugosity, ymin = lwr, ymax = upr, fill = HR_group), alpha = 0.2, color = NA) +
   geom_jitter(data = behavior_merged, aes(x = Rugosity, y = ff_beta), width = 0.05, height = 0.02, alpha = 0.25) +
@@ -817,7 +744,6 @@ foraging_merged$Diet_Category <- factor(foraging_merged$Diet_Category)
 hist(foraging_merged$RTS_Location)
 
 #glmm, gaussian family
-
 #took out Site random effects - AIC lower without it and no changes to significance
 
 distance_model_1 <- glmmTMB(
@@ -906,7 +832,7 @@ newdat$HR_group <- factor(
   labels = c("-1 SD", "Mean", "+1 SD")
 )
 
-
+#figure 4b
 dist_plot <- ggplot() +
   geom_ribbon(data = newdat, aes(x = Rugosity, ymin = lwr, ymax = upr, fill = HR_group), alpha = 0.2, color = NA) +
   geom_jitter(data = foraging_merged, aes(x = Rugosity, y = RTS_Location), width = 0.05, height = 0.1, alpha = 0.25) +
@@ -916,16 +842,6 @@ dist_plot <- ggplot() +
   scale_linetype_manual(values = c("dashed", "solid", "dotted")) +
   labs(x = "Rugosity", y = "Distance from Reef", color = "Height Range", fill = "Height Range", linetype = "Height Range", title = "B") +
   theme_minimal(base_size = 16)
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -945,6 +861,7 @@ letters_df <- cld(
   Letters = letters
 )
 
+#figure 5a
 dist_diet_plot <- ggplot() +
   geom_jitter(
     data = foraging_merged,
@@ -979,11 +896,6 @@ dist_diet_plot <- ggplot() +
     title = "A"
   ) +
   theme_minimal(base_size = 16)
-
-
-
-
-
 
 
 
@@ -1086,7 +998,7 @@ newdat$HR_group <- factor(
   labels = c("-1 SD", "Mean", "+1 SD")
 )
 
-
+#figure 4c
 foraging_dist_plot <- ggplot() +
   geom_ribbon(data = newdat, aes(x = Rugosity, ymin = lwr, ymax = upr, fill = HR_group), alpha = 0.2, color = NA) +
   geom_jitter(data = foraging_only, aes(x = Rugosity, y = RTS_Location), width = 0.05, height = 0.1, alpha = 0.25) +
@@ -1120,6 +1032,7 @@ forage_letters_df <- cld(
   Letters = letters
 )
 
+#figure 5b
 forage_dist_diet_plot <- ggplot() +
   geom_jitter(
     data = foraging_only,
@@ -1157,33 +1070,34 @@ forage_dist_diet_plot <- ggplot() +
 
 
 
-### All Foraging complexity plots together
 
 
+################################################# FIGURE 4: COMPLEXITY EFFECTS ON FORAGING FREQUENCY, DISTANCE FROM REEF, FORAGING DISTANCE ###############
 
 foraging_complexity_plots <- ggarrange(freq_plot, dist_plot, foraging_dist_plot, nrow = 1, ncol = 3, common.legend = TRUE, legend = "top")
 
-ggsave(
-  filename = "outputs/foraging_complexity_plots.pdf",
-  plot = foraging_complexity_plots,
-  device = "pdf",
-  width = 15,
-  height = 7
-)
+# ggsave(
+#   filename = "outputs/foraging_complexity_plots.pdf",
+#   plot = foraging_complexity_plots,
+#   device = "pdf",
+#   width = 15,
+#   height = 7
+# )
 
 
 
-## Diet plots together
+################################################# FIGURE 5: DIET GROUP DIFFERENCES ###############
+
 
 diet_plots <- ggarrange(dist_diet_plot, forage_dist_diet_plot, nrow = 1, ncol = 2)
 
-ggsave(
-  filename = "outputs/diet_plots.pdf",
-  plot = diet_plots,
-  device = "pdf",
-  width = 14,
-  height = 8
-)
+# ggsave(
+#   filename = "outputs/diet_plots.pdf",
+#   plot = diet_plots,
+#   device = "pdf",
+#   width = 14,
+#   height = 8
+# )
 
 
 
@@ -1243,7 +1157,7 @@ AIC(bites_model_3)
 
 
 
-## visualization
+###############################  FIGURE S3: FORAGING DISTANCE EFFECT ON NUMBER OF BITES ###############################
 
 pred_rts <- ggpredict(bites_model_3, terms = "RTS_Location")
 
@@ -1257,13 +1171,13 @@ bites_rts_plot <- ggplot(pred_rts, aes(x, predicted)) +
   theme_minimal(base_size = 16)
 
 
-ggsave(
-  filename = "outputs/bites_rts_plot.pdf",
-  plot = bites_rts_plot,
-  device = "pdf",
-  width = 5,
-  height = 5
-)
+# ggsave(
+#   filename = "outputs/bites_rts_plot.pdf",
+#   plot = bites_rts_plot,
+#   device = "pdf",
+#   width = 5,
+#   height = 5
+# )
 
 
 
